@@ -5,6 +5,7 @@ import { load } from "@tauri-apps/plugin-store";
 const emit = defineEmits(["back"]);
 
 const topics = ref([]);
+const showYesterday = ref(false);
 
 onMounted(async () => {
   const store = await load("topics.json", { autoSave: false });
@@ -15,21 +16,21 @@ onMounted(async () => {
 const todayStart = new Date();
 todayStart.setHours(0, 0, 0, 0);
 const todayStartTs = todayStart.getTime();
+const yesterdayStartTs = todayStartTs - 86400000;
 
-function isTodayDone(item) {
+function isDayDone(item) {
+  if (showYesterday.value) {
+    return item.done && item.doneAt >= yesterdayStartTs && item.doneAt < todayStartTs;
+  }
   return item.done && item.doneAt >= todayStartTs;
 }
 
 const reviewTopics = computed(() =>
   topics.value
-    .filter((t) => {
-      const hasUnfinished = t.items.some((i) => !i.done);
-      const hasTodayDone = t.items.some(isTodayDone);
-      return hasUnfinished && hasTodayDone;
-    })
+    .filter((t) => t.items.some(isDayDone))
     .map((t) => ({
       ...t,
-      doneItems: t.items.filter(isTodayDone).sort((a, b) => a.doneAt - b.doneAt),
+      doneItems: t.items.filter(isDayDone).sort((a, b) => a.doneAt - b.doneAt),
     }))
 );
 
@@ -47,10 +48,15 @@ function formatTime(ts) {
   <div class="page">
     <div class="page-header">
       <button class="back-btn" @click="emit('back')" title="返回">‹</button>
-      <span class="page-title">今日完成</span>
+      <div class="tab-group">
+        <button class="tab-btn" :class="{ active: !showYesterday }" @click="showYesterday = false">今日</button>
+        <button class="tab-btn" :class="{ active: showYesterday }" @click="showYesterday = true">昨日</button>
+      </div>
     </div>
 
-    <div v-if="reviewTopics.length === 0" class="empty">今天还没有完成的子任务</div>
+    <div v-if="reviewTopics.length === 0" class="empty">
+      {{ showYesterday ? "昨天没有完成的子任务" : "今天还没有完成的子任务" }}
+    </div>
 
     <div v-else class="list">
       <div v-for="topic in reviewTopics" :key="topic.id" class="topic-card" :class="topic.priority">
@@ -104,12 +110,33 @@ function formatTime(ts) {
   justify-content: center;
   line-height: 1;
   padding-bottom: 2px;
+  flex-shrink: 0;
 }
 
-.page-title {
-  font-size: 17px;
-  font-weight: 600;
+.tab-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.tab-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #888;
+  background: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab-btn.active {
+  background: white;
   color: #1a1a1a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .empty {
