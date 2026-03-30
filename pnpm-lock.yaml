@@ -24,6 +24,9 @@ importers:
       '@iconify-json/ci':
         specifier: ^1.2.2
         version: 1.2.2
+      '@iconify-json/fa7-regular':
+        specifier: ^1.2.3
+        version: 1.2.3
       '@iconify-json/fluent':
         specifier: ^1.2.41
         version: 1.2.41
@@ -226,6 +229,9 @@ packages:
 
   '@iconify-json/ci@1.2.2':
     resolution: {integrity: sha512-RKqJ2nb48Hk2doM1ljZHRrNCiuzlXhji9xtnPm4VwmTcjUDOkkbrQSHyE7JNRducsP6uVNwDz4J3AaWZG1PxTg==}
+
+  '@iconify-json/fa7-regular@1.2.3':
+    resolution: {integrity: sha512-j+3awnyNH2fpMaxqShVWT1JzaG7HR1N3SkKrMXYeonB3XRdW0SJuMaXqwzl1yPAdcqSO5bmCRIznPJ1j/PDi8w==}
 
   '@iconify-json/fluent@1.2.41':
     resolution: {integrity: sha512-UbUFCJm7gICJuiDVZdo259L05TxAKbECJ/NBax/+N5CejWXJ0q/y++HNWLdJBkSfsZVYH9KtFZgwox36PC0/Wg==}
@@ -780,6 +786,10 @@ snapshots:
     optional: true
 
   '@iconify-json/ci@1.2.2':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/fa7-regular@1.2.3':
     dependencies:
       '@iconify/types': 2.0.0
 

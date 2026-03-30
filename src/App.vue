@@ -7,6 +7,8 @@ import EditIcon from '~icons/fluent/edit-12-filled';
 import CloseMdIcon from '~icons/ci/close-md';
 import DailyReviewIcon from '~icons/line-md/clipboard-list';
 import WeeklyReviewIcon from '~icons/line-md/clipboard-list-twotone';
+import FolderOpen from '~icons/fa7-regular/folder-open';
+import FolderClosed from '~icons/fa7-regular/folder-closed';
 import DailyReview from './pages/dailyReview.vue';
 import WeekReview from './pages/weekReview.vue';
 
@@ -46,14 +48,7 @@ const collapseBtn = ref(null);
 onMounted(async () => {
   store = await load("topics.json", { autoSave: true });
   const saved = await store.get("topics");
-  if (saved) {
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    topics.value = saved.filter((t) => {
-      const createdAt = t.createdAt || 0;
-      const hasUnfinished = t.items.some((i) => !i.done);
-      return createdAt >= oneWeekAgo && hasUnfinished;
-    });
-  }
+  if (saved) topics.value = saved;
 });
 
 watch(topics, async (val) => {
@@ -146,10 +141,19 @@ function isTopicDone(topic) {
   return topic.items.length > 0 && topic.items.every((i) => i.done);
 }
 
-const sortedTopics = computed(() => [
-  ...topics.value.filter((t) => !isTopicDone(t)),
-  ...topics.value.filter((t) => isTopicDone(t)),
-]);
+const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+const sortedTopics = computed(() => {
+  const visible = topics.value.filter((t) => {
+    const createdAt = t.createdAt || 0;
+    if (isTopicDone(t) && createdAt < oneWeekAgo) return false;
+    return true;
+  });
+  return [
+    ...visible.filter((t) => !isTopicDone(t)),
+    ...visible.filter((t) => isTopicDone(t)),
+  ];
+});
 
 function addTopic() {
   const text = newTopicText.value.trim();
@@ -190,9 +194,12 @@ function addItem(topic) {
   newItemText.value[topic.id] = "";
 }
 
-function toggleItem(item) {
+function toggleItem(item, topic) {
   item.done = !item.done;
   item.doneAt = item.done ? Date.now() : null;
+  if (topic && isTopicDone(topic)) {
+    topic.expanded = false;
+  }
 }
 
 function removeItem(topic, itemId) {
@@ -270,7 +277,8 @@ function sortByPriority() {
               :class="[topic.priority, { done: isTopicDone(topic) }]">
               <div class="topic-header">
                 <button class="expand-btn" @click="toggleExpanded(topic)">
-                  {{ topic.expanded ? '▾' : '▸' }}
+                  <FolderOpen v-if="!topic.expanded" />
+                  <FolderClosed v-else />
                 </button>
                 <span class="topic-title" :class="{ strikethrough: isTopicDone(topic) }">
                   {{ topic.title }}
@@ -284,13 +292,13 @@ function sortByPriority() {
 
               <div v-if="topic.expanded" class="items">
                 <div v-for="item in sortedItems(topic)" :key="item.id" class="item" :class="{ done: item.done }">
-                  <span class="checkbox" @click="toggleItem(item)">{{ item.done ? '✓' : '○' }}</span>
+                  <span class="checkbox" @click="toggleItem(item, topic)">{{ item.done ? '✓' : '○' }}</span>
                   <template v-if="editingItemId === item.id">
                     <input class="item-edit-input" v-model="editingItemText" @keydown.enter="saveEditItem(item)"
                       @keydown.esc="editingItemId = null" @blur="saveEditItem(item)" :ref="el => el && el.focus()" />
                   </template>
                   <template v-else>
-                    <span class="item-text" @click="toggleItem(item)">{{ item.text }}</span>
+                    <span class="item-text" @click="toggleItem(item, topic)">{{ item.text }}</span>
                     <span class="item-time">{{ formatTime(item.id) }}</span>
                     <button class="edit-btn" @click="startEditItem(item)">
                       <EditIcon />
@@ -525,10 +533,20 @@ function sortByPriority() {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 12px;
   color: #999;
   padding: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.expand-btn svg {
   width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .topic-title {
