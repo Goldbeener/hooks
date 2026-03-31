@@ -9,6 +9,7 @@ import DailyReviewIcon from '~icons/line-md/clipboard-list';
 import WeeklyReviewIcon from '~icons/line-md/clipboard-list-twotone';
 import FolderOpen from '~icons/fa7-regular/folder-open';
 import FolderClosed from '~icons/fa7-regular/folder-closed';
+import RunningShoe from '~icons/game-icons/running-shoe';
 import DailyReview from './pages/dailyReview.vue';
 import WeekReview from './pages/weekReview.vue';
 
@@ -190,13 +191,16 @@ function toggleExpanded(topic) {
 function addItem(topic) {
   const text = (newItemText.value[topic.id] || "").trim();
   if (!text) return;
-  topic.items.push({ id: Date.now(), text, done: false });
+  topic.items.push({ id: Date.now(), text, done: false, progress: 0 });
   newItemText.value[topic.id] = "";
 }
 
 function toggleItem(item, topic) {
   item.done = !item.done;
   item.doneAt = item.done ? Date.now() : null;
+  if (item.done) {
+    item.progress = 100;
+  }
   if (topic && isTopicDone(topic)) {
     topic.expanded = false;
   }
