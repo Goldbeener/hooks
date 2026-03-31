@@ -49,7 +49,14 @@ const collapseBtn = ref(null);
 onMounted(async () => {
   store = await load("topics.json", { autoSave: true });
   const saved = await store.get("topics");
-  if (saved) topics.value = saved;
+  if (saved) {
+    saved.forEach(topic =>
+      topic.items.forEach(item => {
+        if (item.progress === undefined) item.progress = item.done ? 100 : 0;
+      })
+    );
+    topics.value = saved;
+  }
 });
 
 watch(topics, async (val) => {
