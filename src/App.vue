@@ -252,6 +252,32 @@ function formatTime(id) {
 function sortByPriority() {
   topics.value.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
 }
+
+function startDragProgress(event, item) {
+  // 阻止冒泡，避免触发 toggleItem
+  event.stopPropagation();
+  const el = event.currentTarget.closest('.item');
+  if (!el) return;
+
+  function onMove(e) {
+    const rect = el.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const pct = Math.round(((clientX - rect.left) / rect.width) * 100);
+    item.progress = Math.max(0, Math.min(100, pct));
+  }
+
+  function onUp() {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    window.removeEventListener('touchmove', onMove);
+    window.removeEventListener('touchend', onUp);
+  }
+
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+  window.addEventListener('touchmove', onMove, { passive: true });
+  window.addEventListener('touchend', onUp);
+}
 </script>
 
 <template>
