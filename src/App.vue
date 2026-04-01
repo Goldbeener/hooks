@@ -254,20 +254,23 @@ function sortByPriority() {
 }
 
 function startDragProgress(event, item) {
-  // 阻止冒泡，避免触发 toggleItem
+  // 阻止冒泡，避免触发 toggleItem；阻止默认行为防止文本选中
   event.stopPropagation();
+  event.preventDefault();
   const el = event.currentTarget.closest('.item');
   if (!el) return;
 
   const touchMoveOpts = { passive: true };
 
-  // 拖拽时禁用 transition
+  // 拖拽时禁用 transition，并强制显示图标（防止鼠标移出 item 时消失）
   const fillEl = el.querySelector('.item-progress-fill');
   const shoeEl = el.querySelector('.item-shoe-float');
   if (fillEl) fillEl.style.transition = 'none';
   if (shoeEl) shoeEl.style.transition = 'none';
+  el.classList.add('dragging-progress');
 
   function onMove(e) {
+    e.preventDefault();
     const rect = el.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const pct = Math.round(((clientX - rect.left) / rect.width) * 100);
@@ -275,9 +278,10 @@ function startDragProgress(event, item) {
   }
 
   function onUp() {
-    // 拖拽结束恢复 transition
+    // 拖拽结束恢复 transition，移除强制显示 class
     if (fillEl) fillEl.style.transition = '';
     if (shoeEl) shoeEl.style.transition = '';
+    el.classList.remove('dragging-progress');
     window.removeEventListener('mousemove', onMove);
     window.removeEventListener('mouseup', onUp);
     window.removeEventListener('touchmove', onMove, touchMoveOpts);
@@ -345,11 +349,8 @@ function startDragProgress(event, item) {
 
               <div v-if="topic.expanded" class="items">
                 <div v-for="item in sortedItems(topic)" :key="item.id" class="item" :class="{ done: item.done }">
-                  <div
-                    class="item-progress-fill"
-                    :class="{ 'progress-full': item.progress === 100 }"
-                    :style="{ width: (item.progress || 0) + '%' }"
-                  ></div>
+                  <div class="item-progress-fill" :class="{ 'progress-full': item.progress === 100 }"
+                    :style="{ width: (item.progress || 0) + '%' }"></div>
                   <span class="checkbox" @click="toggleItem(item, topic)">{{ item.done ? '✓' : '○' }}</span>
                   <template v-if="editingItemId === item.id">
                     <div class="item-content-layer">
@@ -369,15 +370,14 @@ function startDragProgress(event, item) {
                   <button class="remove-btn" @click="removeItem(topic, item.id)">
                     <CloseMdIcon />
                   </button>
-                  <div
-                    class="item-shoe-float"
-                    :class="{ 'shoe-hidden': !item.progress }"
-                    :style="{ left: 'calc(' + (item.progress || 0) + '% - 10px)' }"
+                  <div class="item-shoe-float" :class="{ 'shoe-flip': (item.progress || 0) >= 85 }" :style="(item.progress || 0) >= 85
+                    ? { right: 'calc(' + (100 - (item.progress || 0)) + '% + 2px)', left: 'auto' }
+                    : { left: (item.progress || 0) === 0 ? '2px' : 'calc(' + (item.progress || 0) + '% - 10px)' }"
                     @mousedown.stop="startDragProgress($event, item)"
-                    @touchstart.stop.prevent="startDragProgress($event, item)"
-                  >
+                    @touchstart.stop.prevent="startDragProgress($event, item)">
                     <RunningShoe class="shoe-svg" />
-                    <span class="shoe-pct">{{ item.progress || 0 }}%</span>
+                    <span class="shoe-pct" :class="{ 'shoe-pct-hidden': !(item.progress || 0) }">{{ item.progress || 0
+                    }}%</span>
                   </div>
                 </div>
                 <div class="item-input-row">
@@ -898,12 +898,12 @@ function startDragProgress(event, item) {
 }
 
 /* item 内直接子元素和内容层子元素层级高于进度条 */
-.item > .checkbox,
-.item > .remove-btn,
-.item-content-layer > .item-text,
-.item-content-layer > .item-time,
-.item-content-layer > .edit-btn,
-.item-content-layer > .item-edit-input {
+.item>.checkbox,
+.item>.remove-btn,
+.item-content-layer>.item-text,
+.item-content-layer>.item-time,
+.item-content-layer>.edit-btn,
+.item-content-layer>.item-edit-input {
   position: relative;
   z-index: 1;
 }
@@ -916,18 +916,25 @@ function startDragProgress(event, item) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  cursor: ew-resize;
+  cursor: grab;
   z-index: 2;
-  transition: left 0.55s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: auto;
+  transition: left 0.55s cubic-bezier(0.4, 0, 0.2, 1), right 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s;
+  pointer-events: none;
   user-select: none;
+  opacity: 0;
+}
+
+.item:hover .item-shoe-float,
+.item.dragging-progress .item-shoe-float {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .item-shoe-float .shoe-svg {
   width: 14px;
   height: 14px;
   color: #059669;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
 }
 
 .item-shoe-float .shoe-pct {
@@ -936,16 +943,15 @@ function startDragProgress(event, item) {
   color: #065f46;
   line-height: 1;
   white-space: nowrap;
-  background: rgba(255,255,255,0.8);
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 4px;
   padding: 1px 3px;
   margin-top: 1px;
 }
 
-/* 进度为 0 时隐藏图标（用 class binding 而非属性选择器，避免空格不匹配） */
-.item-shoe-float.shoe-hidden {
-  opacity: 0;
-  pointer-events: none;
+/* progress 为 0 时只隐藏百分比标签，图标本体保持可见可拖动 */
+.item-shoe-float .shoe-pct-hidden {
+  display: none;
 }
 
 .item-content-layer {

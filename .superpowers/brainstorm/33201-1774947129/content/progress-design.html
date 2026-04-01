@@ -1,0 +1,301 @@
+<h2>子任务进度条设计方案</h2>
+<p class="subtitle">以整个 item 元素为进度条，RunningShoe 图标跟随进度移动，拖动图标调整进度</p>
+
+<style>
+  .demo-section {
+    margin: 24px 0;
+    padding: 16px;
+    background: #f9f9f9;
+    border-radius: 12px;
+  }
+  .demo-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  /* 通用 item 样式（模拟 App.vue） */
+  .item-demo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  /* ===== 方案 A：进度填充背景色，图标浮动在进度边界 ===== */
+  .item-a {
+    background: transparent;
+  }
+  .item-a .progress-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, rgba(56,161,105,0.18), rgba(56,161,105,0.10));
+    border-radius: 10px 0 0 10px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+  }
+  .item-a .content-layer {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+  .item-a .shoe-wrapper {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    pointer-events: none;
+  }
+  .shoe-icon {
+    font-size: 14px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
+  }
+  .progress-pct {
+    font-size: 10px;
+    font-weight: 700;
+    color: #38a169;
+    white-space: nowrap;
+    background: rgba(255,255,255,0.85);
+    border-radius: 6px;
+    padding: 1px 4px;
+  }
+
+  /* ===== 方案 B：底部进度条条纹，图标在条纹上 ===== */
+  .item-b {
+    padding-bottom: 14px;
+  }
+  .item-b .progress-bar-track {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 0 0 10px 10px;
+  }
+  .item-b .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #68d391, #38a169);
+    border-radius: 0 0 10px 10px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+  .item-b .shoe-on-bar {
+    position: absolute;
+    right: -10px;
+    top: -8px;
+    font-size: 14px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+  }
+  .item-b .pct-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: #38a169;
+    margin-left: auto;
+  }
+
+  /* ===== 方案 C：整行背景渐变（推荐） ===== */
+  .item-c {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+  }
+  .item-c .progress-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, #bbf7d0 0%, #d1fae5 70%, transparent 100%);
+    border-radius: 10px 0 0 10px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+  }
+  .item-c .content-layer {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+  .item-c .shoe-float {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: ew-resize;
+  }
+  .item-c .shoe-float .shoe-icon {
+    font-size: 15px;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+  }
+  .item-c .shoe-float .pct-label {
+    font-size: 9px;
+    font-weight: 800;
+    color: #065f46;
+    margin-top: -1px;
+    white-space: nowrap;
+  }
+
+  .checkbox-mock {
+    font-size: 15px;
+    color: #aaa;
+    width: 18px;
+    flex-shrink: 0;
+  }
+  .text-mock {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+  }
+  .time-mock {
+    font-size: 11px;
+    color: #bbb;
+  }
+</style>
+
+<div class="cards">
+
+  <!-- 方案 A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>方案 A — 背景渐变 + 图标浮层</h3>
+      <p>进度区域填充淡绿色背景，RunningShoe 图标浮动在进度边界处，图标旁显示百分比数字</p>
+      <div class="demo-section">
+        <div class="demo-label">40% 进度示例</div>
+        <div class="item-demo item-a" style="background: rgba(255,255,255,0.9);">
+          <div class="progress-fill" style="width:40%"></div>
+          <div class="content-layer">
+            <span class="checkbox-mock">○</span>
+            <span class="text-mock">完成用户调研报告</span>
+            <span class="time-mock">今天 14:30</span>
+          </div>
+          <div class="shoe-wrapper" style="left: calc(40% - 28px)">
+            <span class="shoe-icon">👟</span>
+            <span class="progress-pct">40%</span>
+          </div>
+        </div>
+        <div class="item-demo item-a" style="background: rgba(255,255,255,0.9);">
+          <div class="progress-fill" style="width:75%"></div>
+          <div class="content-layer">
+            <span class="checkbox-mock">○</span>
+            <span class="text-mock">设计原型</span>
+            <span class="time-mock">今天 09:15</span>
+          </div>
+          <div class="shoe-wrapper" style="left: calc(75% - 28px)">
+            <span class="shoe-icon">👟</span>
+            <span class="progress-pct">75%</span>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>视觉层次清晰</li><li>图标位置直观</li><li>不影响主内容布局</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>图标覆盖在文字区域</li><li>文字可能被遮挡</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案 B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>方案 B — 底部进度条</h3>
+      <p>在 item 底部添加一条 4px 细进度条，RunningShoe 图标骑在进度条末端，百分比显示在右侧</p>
+      <div class="demo-section">
+        <div class="demo-label">60% 进度示例</div>
+        <div class="item-demo item-b" style="background: rgba(255,255,255,0.9);">
+          <span class="checkbox-mock">○</span>
+          <span class="text-mock">撰写技术文档</span>
+          <span class="pct-badge">60%</span>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" style="width:60%">
+              <span class="shoe-on-bar">👟</span>
+            </div>
+          </div>
+        </div>
+        <div class="item-demo item-b" style="background: rgba(255,255,255,0.9);">
+          <span class="checkbox-mock">○</span>
+          <span class="text-mock">代码审查</span>
+          <span class="pct-badge">30%</span>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" style="width:30%">
+              <span class="shoe-on-bar">👟</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>不影响主内容区域</li><li>进度条语义清晰</li><li>图标不遮挡文字</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>视觉效果较弱</li><li>item 高度略增加</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案 C（推荐） -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>方案 C — 整行渐变填充 + 图标可拖拽 ⭐ 推荐</h3>
+      <p>整个 item 行作为进度条，绿色渐变从左向右扩展；RunningShoe 图标浮在进度前沿，可左右拖动设置进度；完成时动画充满全行</p>
+      <div class="demo-section">
+        <div class="demo-label">55% 进度 | 图标可拖动</div>
+        <div class="item-demo item-c">
+          <div class="progress-fill" style="width:55%"></div>
+          <div class="content-layer">
+            <span class="checkbox-mock">○</span>
+            <span class="text-mock">整理会议记录和行动项</span>
+            <span class="time-mock">昨天 16:00</span>
+          </div>
+          <div class="shoe-float" style="left: calc(55% - 10px)" title="拖动调整进度">
+            <span class="shoe-icon">👟</span>
+            <span class="pct-label">55%</span>
+          </div>
+        </div>
+        <div class="item-demo item-c">
+          <div class="progress-fill" style="width:20%"></div>
+          <div class="content-layer">
+            <span class="checkbox-mock">○</span>
+            <span class="text-mock">测试新功能</span>
+            <span class="time-mock">今天 11:22</span>
+          </div>
+          <div class="shoe-float" style="left: calc(20% - 10px)" title="拖动调整进度">
+            <span class="shoe-icon">👟</span>
+            <span class="pct-label">20%</span>
+          </div>
+        </div>
+        <div class="item-demo item-c" style="border-color: #6ee7b7">
+          <div class="progress-fill" style="width:100%; background: linear-gradient(90deg, #bbf7d0, #6ee7b7)"></div>
+          <div class="content-layer">
+            <span class="checkbox-mock" style="color:#38a169">✓</span>
+            <span class="text-mock" style="text-decoration:line-through;color:#aaa">已完成的任务</span>
+          </div>
+          <div class="shoe-float" style="left: calc(100% - 28px)" title="100%完成">
+            <span class="shoe-icon">👟</span>
+            <span class="pct-label" style="color:#065f46">100%</span>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>视觉冲击力最强</li><li>进度感最直观</li><li>完成动画效果震撼</li><li>拖拽交互自然</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>布局需要 position:relative</li><li>图标偶尔可能覆盖文字</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px; text-align:center;">点击选择你喜欢的方案，或在终端告诉我你的想法</p>
