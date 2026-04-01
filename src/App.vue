@@ -153,8 +153,10 @@ const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
 const sortedTopics = computed(() => {
   const visible = topics.value.filter((t) => {
-    const createdAt = t.createdAt || 0;
-    if (isTopicDone(t) && createdAt < oneWeekAgo) return false;
+    if (isTopicDone(t)) {
+      const lastDoneAt = Math.max(...t.items.map(i => i.doneAt || 0));
+      if (lastDoneAt < oneWeekAgo) return false;
+    }
     return true;
   });
   return [
@@ -278,10 +280,11 @@ function startDragProgress(event, item) {
   }
 
   function onUp() {
-    // 拖拽结束恢复 transition，移除强制显示 class
+    // 拖拽结束恢复 transition，移除强制显示 class，记录进度更新时间
     if (fillEl) fillEl.style.transition = '';
     if (shoeEl) shoeEl.style.transition = '';
     el.classList.remove('dragging-progress');
+    if (item.progress > 0) item.progressAt = Date.now();
     window.removeEventListener('mousemove', onMove);
     window.removeEventListener('mouseup', onUp);
     window.removeEventListener('touchmove', onMove, touchMoveOpts);

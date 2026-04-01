@@ -25,12 +25,23 @@ function isDayDone(item) {
   return item.done && item.doneAt >= todayStartTs;
 }
 
+function isDayProgress(item) {
+  if (item.done) return false; // 已完成的走 isDayDone 逻辑
+  const t = item.progressAt;
+  if (!t || !item.progress) return false;
+  if (showYesterday.value) {
+    return t >= yesterdayStartTs && t < todayStartTs;
+  }
+  return t >= todayStartTs;
+}
+
 const reviewTopics = computed(() =>
   topics.value
-    .filter((t) => t.items.some(isDayDone))
+    .filter((t) => t.items.some((i) => isDayDone(i) || isDayProgress(i)))
     .map((t) => ({
       ...t,
       doneItems: t.items.filter(isDayDone).sort((a, b) => a.doneAt - b.doneAt),
+      progressItems: t.items.filter(isDayProgress).sort((a, b) => (b.progressAt || 0) - (a.progressAt || 0)),
     }))
 );
 
@@ -65,10 +76,16 @@ function formatTime(ts) {
           <span class="priority-badge" :class="topic.priority">{{ priorityLabel[topic.priority] }}</span>
         </div>
         <div class="items">
-          <div v-for="item in topic.doneItems" :key="item.id" class="item">
-            <span class="checkbox">✓</span>
+          <div v-for="item in topic.doneItems" :key="item.id" class="item item-done">
+            <span class="checkbox done-check">✓</span>
             <span class="item-text">{{ item.text }}</span>
             <span class="item-time">{{ formatTime(item.doneAt) }}</span>
+          </div>
+          <div v-for="item in topic.progressItems" :key="item.id" class="item item-progress">
+            <span class="checkbox progress-check">…</span>
+            <span class="item-text">{{ item.text }}</span>
+            <span class="progress-badge">{{ item.progress }}%</span>
+            <span class="item-time">{{ formatTime(item.progressAt) }}</span>
           </div>
         </div>
       </div>
@@ -219,16 +236,36 @@ function formatTime(ts) {
 
 .checkbox {
   font-size: 15px;
-  color: #38a169;
   width: 18px;
   flex-shrink: 0;
+}
+
+.done-check {
+  color: #38a169;
+}
+
+.progress-check {
+  color: #d97706;
 }
 
 .item-text {
   flex: 1;
   font-size: 14px;
   color: #555;
+}
+
+.item-done .item-text {
   text-decoration: line-through;
+}
+
+.progress-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #d97706;
+  background: #fef3c7;
+  border-radius: 6px;
+  padding: 1px 6px;
+  white-space: nowrap;
 }
 
 .item-time {
