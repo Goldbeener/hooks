@@ -22,6 +22,7 @@ const contentVisible = ref(true);
 const animating = ref(false);
 const editingItemId = ref(null);
 const editingItemText = ref("");
+const confirmDialog = ref(null); // { topic, itemId }
 const currentPage = ref("main");
 const slideDirection = ref("forward"); // forward: 主页→子页, backward: 子页→主页
 
@@ -173,7 +174,7 @@ function addTopic() {
 }
 
 function removeTopic(id) {
-  topics.value = topics.value.filter((t) => t.id !== id);
+  confirmDialog.value = { type: "topic", id };
 }
 
 function cyclePriority(topic) {
@@ -216,7 +217,17 @@ function toggleItem(item, topic) {
 }
 
 function removeItem(topic, itemId) {
-  topic.items = topic.items.filter((i) => i.id !== itemId);
+  confirmDialog.value = { type: "item", topic, itemId };
+}
+
+function confirmRemoveItem() {
+  const d = confirmDialog.value;
+  if (d.type === "topic") {
+    topics.value = topics.value.filter((t) => t.id !== d.id);
+  } else {
+    d.topic.items = d.topic.items.filter((i) => i.id !== d.itemId);
+  }
+  confirmDialog.value = null;
 }
 
 function startEditItem(item) {
@@ -393,6 +404,16 @@ function startDragProgress(event, item) {
         </template>
       </div>
     </Transition>
+
+    <div v-if="confirmDialog" class="confirm-overlay" @click.self="confirmDialog = null">
+      <div class="confirm-box">
+        <p class="confirm-text">{{ confirmDialog.type === 'topic' ? '确认删除该主题及其所有子任务？' : '确认删除该子任务？' }}</p>
+        <div class="confirm-actions">
+          <button class="confirm-cancel" @click="confirmDialog = null">取消</button>
+          <button class="confirm-ok" @click="confirmRemoveItem">删除</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 <style>
@@ -461,6 +482,58 @@ function startDragProgress(event, item) {
 .slide-right-leave-to {
   transform: translateX(100%);
   opacity: 0;
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  border-radius: 16px;
+}
+
+.confirm-box {
+  background: white;
+  border-radius: 14px;
+  padding: 20px 20px 16px;
+  width: 220px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.confirm-text {
+  font-size: 14px;
+  color: #1a1a1a;
+  margin: 0 0 16px;
+  text-align: center;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.confirm-cancel,
+.confirm-ok {
+  flex: 1;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.confirm-cancel {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.confirm-ok {
+  background: #e53e3e;
+  color: white;
 }
 </style>
 
