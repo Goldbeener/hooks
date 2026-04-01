@@ -259,6 +259,8 @@ function startDragProgress(event, item) {
   const el = event.currentTarget.closest('.item');
   if (!el) return;
 
+  const touchMoveOpts = { passive: true };
+
   function onMove(e) {
     const rect = el.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -269,14 +271,19 @@ function startDragProgress(event, item) {
   function onUp() {
     window.removeEventListener('mousemove', onMove);
     window.removeEventListener('mouseup', onUp);
-    window.removeEventListener('touchmove', onMove);
+    window.removeEventListener('touchmove', onMove, touchMoveOpts);
     window.removeEventListener('touchend', onUp);
+    window.removeEventListener('touchcancel', onUp);
   }
+
+  // 立即更新到点击位置
+  onMove(event);
 
   window.addEventListener('mousemove', onMove);
   window.addEventListener('mouseup', onUp);
-  window.addEventListener('touchmove', onMove, { passive: true });
+  window.addEventListener('touchmove', onMove, touchMoveOpts);
   window.addEventListener('touchend', onUp);
+  window.addEventListener('touchcancel', onUp);
 }
 </script>
 
