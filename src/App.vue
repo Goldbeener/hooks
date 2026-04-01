@@ -336,6 +336,10 @@ function startDragProgress(event, item) {
 
               <div v-if="topic.expanded" class="items">
                 <div v-for="item in sortedItems(topic)" :key="item.id" class="item" :class="{ done: item.done }">
+                  <div
+                    class="item-progress-fill"
+                    :style="{ width: (item.progress || 0) + '%' }"
+                  ></div>
                   <span class="checkbox" @click="toggleItem(item, topic)">{{ item.done ? '✓' : '○' }}</span>
                   <template v-if="editingItemId === item.id">
                     <input class="item-edit-input" v-model="editingItemText" @keydown.enter="saveEditItem(item)"
@@ -351,6 +355,16 @@ function startDragProgress(event, item) {
                   <button class="remove-btn" @click="removeItem(topic, item.id)">
                     <CloseMdIcon />
                   </button>
+                  <div
+                    class="item-shoe-float"
+                    :class="{ 'shoe-hidden': !item.progress }"
+                    :style="{ left: 'calc(' + (item.progress || 0) + '% - 10px)' }"
+                    @mousedown.stop="startDragProgress($event, item)"
+                    @touchstart.stop.prevent="startDragProgress($event, item)"
+                  >
+                    <RunningShoe class="shoe-svg" />
+                    <span class="shoe-pct">{{ item.progress || 0 }}%</span>
+                  </div>
                 </div>
                 <div class="item-input-row">
                   <input v-model="newItemText[topic.id]" placeholder="添加待办..." @keydown.enter="addItem(topic)" />
