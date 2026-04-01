@@ -347,6 +347,7 @@ function startDragProgress(event, item) {
                 <div v-for="item in sortedItems(topic)" :key="item.id" class="item" :class="{ done: item.done }">
                   <div
                     class="item-progress-fill"
+                    :class="{ 'progress-full': item.progress === 100 }"
                     :style="{ width: (item.progress || 0) + '%' }"
                   ></div>
                   <span class="checkbox" @click="toggleItem(item, topic)">{{ item.done ? '✓' : '○' }}</span>
@@ -892,17 +893,17 @@ function startDragProgress(event, item) {
 
 /* 当进度为 100% 时，右侧圆角也填满 */
 .item.done .item-progress-fill,
-.item-progress-fill[style*="width: 100"] {
+.item-progress-fill.progress-full {
   border-radius: 10px;
 }
 
-/* item 内所有直接内容层级高于进度条 */
+/* item 内直接子元素和内容层子元素层级高于进度条 */
 .item > .checkbox,
-.item > .item-text,
-.item > .item-time,
-.item > .edit-btn,
 .item > .remove-btn,
-.item > template {
+.item-content-layer > .item-text,
+.item-content-layer > .item-time,
+.item-content-layer > .edit-btn,
+.item-content-layer > .item-edit-input {
   position: relative;
   z-index: 1;
 }
@@ -920,11 +921,6 @@ function startDragProgress(event, item) {
   transition: left 0.55s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: auto;
   user-select: none;
-}
-
-/* 拖拽时禁用过渡动画（避免拖拽延迟感） */
-.item-shoe-float.dragging {
-  transition: none;
 }
 
 .item-shoe-float .shoe-svg {
@@ -954,7 +950,5 @@ function startDragProgress(event, item) {
 
 .item-content-layer {
   display: contents;
-  position: relative;
-  z-index: 1;
 }
 </style>
