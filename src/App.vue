@@ -855,4 +855,87 @@ function startDragProgress(event, item) {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(8px);
 }
+
+/* ===== Item Progress Bar ===== */
+
+/* item 需要 relative 定位以容纳绝对定位子元素 */
+.item {
+  position: relative;
+  overflow: hidden;
+}
+
+/* 进度填充层：绿色渐变背景，覆盖在 item 背景之上、内容之下 */
+.item-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(187, 247, 208, 0.75) 0%, rgba(110, 231, 183, 0.45) 80%, transparent 100%);
+  border-radius: 10px 0 0 10px;
+  transition: width 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 当进度为 100% 时，右侧圆角也填满 */
+.item.done .item-progress-fill,
+.item-progress-fill[style*="width: 100"] {
+  border-radius: 10px;
+}
+
+/* item 内所有直接内容层级高于进度条 */
+.item > .checkbox,
+.item > .item-text,
+.item > .item-time,
+.item > .edit-btn,
+.item > .remove-btn,
+.item > template {
+  position: relative;
+  z-index: 1;
+}
+
+/* RunningShoe 浮层：绝对定位在进度边界 */
+.item-shoe-float {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: ew-resize;
+  z-index: 2;
+  transition: left 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  user-select: none;
+}
+
+/* 拖拽时禁用过渡动画（避免拖拽延迟感） */
+.item-shoe-float.dragging {
+  transition: none;
+}
+
+.item-shoe-float .shoe-svg {
+  width: 14px;
+  height: 14px;
+  color: #059669;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+}
+
+.item-shoe-float .shoe-pct {
+  font-size: 9px;
+  font-weight: 800;
+  color: #065f46;
+  line-height: 1;
+  white-space: nowrap;
+  background: rgba(255,255,255,0.8);
+  border-radius: 4px;
+  padding: 1px 3px;
+  margin-top: 1px;
+}
+
+/* 进度为 0 时隐藏图标（用 class binding 而非属性选择器，避免空格不匹配） */
+.item-shoe-float.shoe-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
 </style>
