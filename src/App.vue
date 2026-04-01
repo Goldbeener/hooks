@@ -342,15 +342,19 @@ function startDragProgress(event, item) {
                   ></div>
                   <span class="checkbox" @click="toggleItem(item, topic)">{{ item.done ? '✓' : '○' }}</span>
                   <template v-if="editingItemId === item.id">
-                    <input class="item-edit-input" v-model="editingItemText" @keydown.enter="saveEditItem(item)"
-                      @keydown.esc="editingItemId = null" @blur="saveEditItem(item)" :ref="el => el && el.focus()" />
+                    <div class="item-content-layer">
+                      <input class="item-edit-input" v-model="editingItemText" @keydown.enter="saveEditItem(item)"
+                        @keydown.esc="editingItemId = null" @blur="saveEditItem(item)" :ref="el => el && el.focus()" />
+                    </div>
                   </template>
                   <template v-else>
-                    <span class="item-text" @click="toggleItem(item, topic)">{{ item.text }}</span>
-                    <span class="item-time">{{ formatTime(item.id) }}</span>
-                    <button class="edit-btn" @click="startEditItem(item)">
-                      <EditIcon />
-                    </button>
+                    <div class="item-content-layer">
+                      <span class="item-text" @click="toggleItem(item, topic)">{{ item.text }}</span>
+                      <span class="item-time">{{ formatTime(item.id) }}</span>
+                      <button class="edit-btn" @click="startEditItem(item)">
+                        <EditIcon />
+                      </button>
+                    </div>
                   </template>
                   <button class="remove-btn" @click="removeItem(topic, item.id)">
                     <CloseMdIcon />
@@ -937,5 +941,11 @@ function startDragProgress(event, item) {
 .item-shoe-float.shoe-hidden {
   opacity: 0;
   pointer-events: none;
+}
+
+.item-content-layer {
+  display: contents;
+  position: relative;
+  z-index: 1;
 }
 </style>
