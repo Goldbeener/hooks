@@ -5,6 +5,7 @@ import { load } from "@tauri-apps/plugin-store";
 const emit = defineEmits(["back"]);
 
 const topics = ref([]);
+const copyToast = ref(false);
 
 onMounted(async () => {
   const store = await load("topics.json", { autoSave: false });
@@ -58,6 +59,44 @@ function formatTime(ts) {
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${dayLabel(ts)} ${hh}:${mm}`;
 }
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}.${m}.${day}`;
+}
+
+function naturalDays(fromTs, toTs) {
+  const fromDay = new Date(new Date(fromTs).toDateString());
+  const toDay = new Date(new Date(toTs).toDateString());
+  return Math.round((toDay - fromDay) / 86400000);
+}
+
+async function copyToClipboard() {
+  const lines = [];
+  for (const topic of reviewTopics.value) {
+    lines.push(`【${topic.title}】`);
+    for (const item of topic.doneItems) {
+      const days = naturalDays(item.id, item.doneAt);
+      const dateRange = `${formatDate(item.id)} - ${formatDate(item.doneAt)}`;
+      const dayStr = days === 0 ? `${dateRange}，当天完成` : `${dateRange}，历时${days}天`;
+      lines.push(`  · ${item.text}【已完成】（${dayStr}）`);
+    }
+    for (const item of topic.progressItems) {
+      const now = Date.now();
+      const days = naturalDays(item.id, now);
+      const dateRange = `${formatDate(item.id)} - ${formatDate(now)}`;
+      const dayStr = days === 0 ? `${dateRange}，当天` : `${dateRange}，已历时${days}天`;
+      lines.push(`  · ${item.text}【进度${item.progress}%】（${dayStr}）`);
+    }
+  }
+  const text = lines.join("\n");
+  await navigator.clipboard.writeText(text);
+  copyToast.value = true;
+  setTimeout(() => (copyToast.value = false), 2000);
+}
 </script>
 
 <template>
@@ -65,7 +104,12 @@ function formatTime(ts) {
     <div class="page-header">
       <button class="back-btn" @click="emit('back')" title="返回">‹</button>
       <span class="page-title">本周完成</span>
+      <button v-if="reviewTopics.length > 0" class="copy-btn" @click="copyToClipboard" title="复制到剪贴板">复制</button>
     </div>
+
+    <transition name="toast">
+      <div v-if="copyToast" class="toast">已复制到剪贴板</div>
+    </transition>
 
     <div v-if="reviewTopics.length === 0" class="empty">本周还没有完成的子任务</div>
 
@@ -251,5 +295,45 @@ function formatTime(ts) {
   font-size: 11px;
   color: #bbb;
   white-space: nowrap;
+}
+
+.copy-btn {
+  margin-left: auto;
+  background: #1a1a1a;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.copy-btn:active {
+  opacity: 0.7;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-size: 13px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: opacity 0.25s;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
 }
 </style>
