@@ -261,6 +261,12 @@ function startDragProgress(event, item) {
 
   const touchMoveOpts = { passive: true };
 
+  // 拖拽时禁用 transition
+  const fillEl = el.querySelector('.item-progress-fill');
+  const shoeEl = el.querySelector('.item-shoe-float');
+  if (fillEl) fillEl.style.transition = 'none';
+  if (shoeEl) shoeEl.style.transition = 'none';
+
   function onMove(e) {
     const rect = el.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -269,6 +275,9 @@ function startDragProgress(event, item) {
   }
 
   function onUp() {
+    // 拖拽结束恢复 transition
+    if (fillEl) fillEl.style.transition = '';
+    if (shoeEl) shoeEl.style.transition = '';
     window.removeEventListener('mousemove', onMove);
     window.removeEventListener('mouseup', onUp);
     window.removeEventListener('touchmove', onMove, touchMoveOpts);
