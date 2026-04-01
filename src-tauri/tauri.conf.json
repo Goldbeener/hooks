@@ -15,10 +15,8 @@
         "title": "hooks",
         "height": 600,
         "label": "main",
-        "decorations": false,
-        "transparent": true,
+        "decorations": true,
         "resizable": true,
-        "shadow": false,
         "width": 400
       }
     ],

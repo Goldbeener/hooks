@@ -73,11 +73,13 @@ async function toggleCollapse() {
   const isCollapsing = !collapsed.value;
   try {
     const win = getCurrentWindow();
-    const [outerSize, outerPos] = await Promise.all([win.outerSize(), win.outerPosition()]);
+    const [outerSize, innerSize, outerPos] = await Promise.all([win.outerSize(), win.innerSize(), win.outerPosition()]);
     const currentWidth = outerSize.width;
     const currentHeight = outerSize.height;
     const currentX = outerPos.x;
     const currentY = outerPos.y;
+    // 系统标题栏高度（物理像素）
+    const titleBarHeight = outerSize.height - innerSize.height;
 
     let targetWidth, targetHeight, targetX, targetY;
 
@@ -88,15 +90,13 @@ async function toggleCollapse() {
       const btn = collapseBtn.value;
       if (btn) {
         const rect = btn.getBoundingClientRect();
-        const paddingTop = rect.top;
-        const paddingRight = window.innerWidth - rect.right;
-        const pad = Math.min(paddingTop, paddingRight);
-        const size = Math.round((pad + Math.max(rect.width, rect.height) + pad) * scale);
-        targetWidth = size;
-        targetHeight = size;
+        const pad = window.innerWidth - rect.right;
+        const contentSize = Math.round((pad + Math.max(rect.width, rect.height) + pad) * scale);
+        targetWidth = contentSize;
+        targetHeight = contentSize + titleBarHeight;
       } else {
         targetWidth = COLLAPSED_SIZE;
-        targetHeight = COLLAPSED_SIZE;
+        targetHeight = COLLAPSED_SIZE + titleBarHeight;
       }
       targetX = currentX + currentWidth - targetWidth;
       targetY = currentY;
@@ -544,15 +544,10 @@ function startDragProgress(event, item) {
   height: 100vh;
   padding: 20px 16px;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border-radius: 16px;
+  background: #ffffff;
 }
 
 .app.collapsed {
-  background: transparent;
-  border-radius: 50%;
-  box-shadow: none;
   overflow: hidden;
 }
 
@@ -943,7 +938,6 @@ function startDragProgress(event, item) {
 .app.collapsed .collapse-btn {
   border-radius: 10px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(8px);
 }
 
 /* ===== Item Progress Bar ===== */
