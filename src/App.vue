@@ -637,7 +637,7 @@ function startDragProgress(event, item) {
 }
 
 .list::-webkit-scrollbar {
-  width: 4px;
+  display: none;
 }
 
 .list::-webkit-scrollbar-thumb {
