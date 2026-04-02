@@ -388,14 +388,15 @@ function startDragProgress(event, item) {
                   <button class="remove-btn" @click="removeItem(topic, item.id)">
                     <CloseMdIcon />
                   </button>
-                  <div class="item-shoe-float" :class="{ 'shoe-flip': (item.progress || 0) >= 85 }" :style="(item.progress || 0) >= 85
-                    ? { right: 'calc(' + (100 - (item.progress || 0)) + '% + 2px)', left: 'auto' }
-                    : { left: (item.progress || 0) === 0 ? '2px' : 'calc(' + (item.progress || 0) + '% - 10px)' }"
+                  <div class="item-shoe-float" title="拖拽调整进度" :class="{ 'shoe-flip': (item.progress || 0) >= 85 }"
+                    :style="(item.progress || 0) >= 85
+                      ? { right: 'calc(' + (100 - (item.progress || 0)) + '% + 2px)', left: 'auto' }
+                      : { left: (item.progress || 0) === 0 ? '2px' : 'calc(' + (item.progress || 0) + '% - 10px)' }"
                     @mousedown.stop="startDragProgress($event, item)"
                     @touchstart.stop.prevent="startDragProgress($event, item)">
                     <RunningShoe class="shoe-svg" />
                     <span class="shoe-pct" :class="{ 'shoe-pct-hidden': !(item.progress || 0) }">{{ item.progress || 0
-                    }}%</span>
+                      }}%</span>
                   </div>
                 </div>
                 <div class="item-input-row">

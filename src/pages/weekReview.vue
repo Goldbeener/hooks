@@ -6,6 +6,7 @@ const emit = defineEmits(["back"]);
 
 const topics = ref([]);
 const copyToast = ref(false);
+const copyFormat = ref("text"); // "text" | "json"
 
 onMounted(async () => {
   const store = await load("topics.json", { autoSave: false });
@@ -74,26 +75,57 @@ function naturalDays(fromTs, toTs) {
   return Math.round((toDay - fromDay) / 86400000);
 }
 
-async function copyToClipboard() {
-  const lines = [];
+function buildJsonData() {
+  const result = [];
   for (const topic of reviewTopics.value) {
-    lines.push(`【${topic.title}】`);
     for (const item of topic.doneItems) {
       const days = naturalDays(item.id, item.doneAt);
-      const dateRange = `${formatDate(item.id)} - ${formatDate(item.doneAt)}`;
-      const dayStr = days === 0 ? `${dateRange}，当天完成` : `${dateRange}，历时${days}天`;
-      lines.push(`  · ${item.text}【已完成】（${dayStr}）`);
+      result.push({
+        name: `${topic.title} - ${item.text}`,
+        startDate: formatDate(item.id),
+        lastUpdatedDate: formatDate(item.doneAt),
+        hours: Math.max(1, days) * 8,
+      });
     }
     for (const item of topic.progressItems) {
       const now = Date.now();
       const days = naturalDays(item.id, now);
-      const dateRange = `${formatDate(item.id)} - ${formatDate(now)}`;
-      const dayStr = days === 0 ? `${dateRange}，当天` : `${dateRange}，已历时${days}天`;
-      lines.push(`  · ${item.text}【进度${item.progress}%】（${dayStr}）`);
+      result.push({
+        name: `${topic.title} - ${item.text}（${item.progress}%）`,
+        startDate: formatDate(item.id),
+        lastUpdatedDate: formatDate(item.progressAt),
+        hours: Math.max(1, days) * 8,
+      });
     }
   }
-  const text = lines.join("\n");
-  await navigator.clipboard.writeText(text);
+  return result;
+}
+
+async function copyToClipboard() {
+  let content;
+  if (copyFormat.value === "json") {
+    content = JSON.stringify(buildJsonData(), null, 2);
+  } else {
+    const lines = [];
+    for (const topic of reviewTopics.value) {
+      lines.push(`【${topic.title}】`);
+      for (const item of topic.doneItems) {
+        const days = naturalDays(item.id, item.doneAt);
+        const dateRange = `${formatDate(item.id)} - ${formatDate(item.doneAt)}`;
+        const dayStr = days === 0 ? `${dateRange}，当天完成` : `${dateRange}，历时${days}天`;
+        lines.push(`  · ${item.text}【已完成】（${dayStr}）`);
+      }
+      for (const item of topic.progressItems) {
+        const now = Date.now();
+        const days = naturalDays(item.id, now);
+        const dateRange = `${formatDate(item.id)} - ${formatDate(now)}`;
+        const dayStr = days === 0 ? `${dateRange}，当天` : `${dateRange}，已历时${days}天`;
+        lines.push(`  · ${item.text}【进度${item.progress}%】（${dayStr}）`);
+      }
+    }
+    content = lines.join("\n");
+  }
+  await navigator.clipboard.writeText(content);
   copyToast.value = true;
   setTimeout(() => (copyToast.value = false), 2000);
 }
@@ -104,7 +136,16 @@ async function copyToClipboard() {
     <div class="page-header">
       <button class="back-btn" @click="emit('back')" title="返回">‹</button>
       <span class="page-title">本周完成</span>
-      <button v-if="reviewTopics.length > 0" class="copy-btn" @click="copyToClipboard" title="复制到剪贴板">复制</button>
+      <template v-if="reviewTopics.length > 0">
+        <label class="format-switch">
+          <span :class="{ active: copyFormat === 'text' }">文本</span>
+          <span class="switch-track" @click="copyFormat = copyFormat === 'text' ? 'json' : 'text'">
+            <span class="switch-thumb" :class="{ json: copyFormat === 'json' }"></span>
+          </span>
+          <span :class="{ active: copyFormat === 'json' }">JSON</span>
+        </label>
+        <button class="copy-btn" @click="copyToClipboard" title="复制到剪贴板">复制</button>
+      </template>
     </div>
 
     <transition name="toast">
@@ -307,6 +348,53 @@ async function copyToClipboard() {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
+}
+
+.format-switch {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #aaa;
+  cursor: default;
+  user-select: none;
+}
+
+.format-switch span.active {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.switch-track {
+  width: 30px;
+  height: 17px;
+  background: #ddd;
+  border-radius: 9px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.switch-track:has(.switch-thumb.json) {
+  background: #1a1a1a;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.switch-thumb.json {
+  transform: translateX(13px);
 }
 
 .copy-btn:active {
