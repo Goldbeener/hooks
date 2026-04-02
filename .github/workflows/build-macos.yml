@@ -37,15 +37,15 @@ jobs:
 
       - name: Build Tauri app (Apple Silicon)
         env:
-          APPLE_SIGNING_IDENTITY: ""
+          TAURI_SIGNING_PRIVATE_KEY: ""
           CI: false
-        run: pnpm tauri build --target aarch64-apple-darwin -- --config '{"bundle":{"macOS":{"signingIdentity":null}}}'
+        run: pnpm tauri build --target aarch64-apple-darwin
 
       - name: Build Tauri app (Intel)
         env:
-          APPLE_SIGNING_IDENTITY: ""
+          TAURI_SIGNING_PRIVATE_KEY: ""
           CI: false
-        run: pnpm tauri build --target x86_64-apple-darwin -- --config '{"bundle":{"macOS":{"signingIdentity":null}}}'
+        run: pnpm tauri build --target x86_64-apple-darwin
 
       - name: Upload Apple Silicon build
         uses: actions/upload-artifact@v4
