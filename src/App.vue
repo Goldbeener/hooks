@@ -296,6 +296,10 @@ function startDragProgress(event, item) {
     if (shoeEl) shoeEl.style.transition = '';
     el.classList.remove('dragging-progress');
     if (item.progress > 0) item.progressAt = Date.now();
+    if (item.done && item.progress < 100) {
+      item.done = false;
+      item.doneAt = null;
+    }
     window.removeEventListener('mousemove', onMove);
     window.removeEventListener('mouseup', onUp);
     window.removeEventListener('touchmove', onMove, touchMoveOpts);
