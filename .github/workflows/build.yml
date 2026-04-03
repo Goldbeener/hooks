@@ -56,11 +56,19 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
-      - name: Build Tauri app
+      - name: Build Tauri app (macOS)
+        if: runner.os == 'macOS'
         env:
           TAURI_SIGNING_PRIVATE_KEY: ""
           CI: false
         run: pnpm tauri build --target ${{ matrix.target }} --bundles app
+
+      - name: Build Tauri app (Windows)
+        if: runner.os == 'Windows'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ""
+          CI: false
+        run: pnpm tauri build --target ${{ matrix.target }}
 
       - name: Package macOS app as tar.gz
         if: runner.os == 'macOS'
