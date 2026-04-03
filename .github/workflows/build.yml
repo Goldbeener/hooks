@@ -20,12 +20,12 @@ jobs:
             target: aarch64-apple-darwin
             artifact-name: hooks-macos-arm64
             artifact-path: |
-              src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+              src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.tar.gz
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact-name: hooks-macos-x64
             artifact-path: |
-              src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+              src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.tar.gz
 
     runs-on: ${{ matrix.os }}
 
@@ -60,7 +60,14 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ""
           CI: false
-        run: pnpm tauri build --target ${{ matrix.target }}
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles app
+
+      - name: Package macOS app as tar.gz
+        if: runner.os == 'macOS'
+        run: |
+          APP_PATH=$(find src-tauri/target/${{ matrix.target }}/release/bundle/macos -name "*.app" | head -1)
+          APP_DIR=$(dirname "$APP_PATH")
+          tar -czf "$APP_DIR/hooks-${{ matrix.target }}.tar.gz" -C "$APP_DIR" "$(basename "$APP_PATH")"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
