@@ -203,18 +203,26 @@ function startHoursDrag(event, entryKey) {
   event.stopPropagation();
   event.preventDefault();
   const barEl = event.currentTarget;
+  const fillEl = barEl.querySelector(".hours-bar-fill");
+  const valEl = barEl.closest(".day-task-row").querySelector(".hours-val");
+  let currentStepped = dayHours.value.get(entryKey) ?? 0;
 
   function onMove(e) {
-    const rect = barEl.getBoundingClientRect();
+    if (e.cancelable) e.preventDefault();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    // Map ratio to 0.5–24h in 0.5h steps
-    const raw = ratio * 24;
-    const stepped = Math.max(0.5, Math.round(raw * 2) / 2);
-    dayHours.value = new Map(dayHours.value).set(entryKey, stepped);
+    // Re-read rect each move: safe since DOM ops don't trigger Vue rerender
+    const liveRect = barEl.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - liveRect.left) / liveRect.width));
+    const raw = ratio * 12;
+    currentStepped = Math.round(raw * 2) / 2;
+    // Direct DOM update — bypasses Vue reactivity entirely, no reflow
+    fillEl.style.transform = `scaleX(${currentStepped / 12})`;
+    if (valEl) valEl.textContent = `${currentStepped}h`;
   }
 
   function onUp() {
+    // Commit to Vue state only once, on release
+    dayHours.value = new Map(dayHours.value).set(entryKey, currentStepped);
     window.removeEventListener("mousemove", onMove);
     window.removeEventListener("mouseup", onUp);
     window.removeEventListener("touchmove", onMove);
@@ -242,7 +250,6 @@ function buildDayJsonData() {
       result.push({
         startDate: formatDate(entry.itemId),
         lastUpdatedDate: formatDate(group.dayTs),
-        hours,
         cardId: null,
         content,
         duration: [group.dayTs, dayEnd],
@@ -347,19 +354,15 @@ async function copyToClipboard() {
               <span class="day-task-topic">{{ entry.topicTitle }}</span>
               <span class="day-task-text">{{ entry.itemText }}</span>
             </div>
-            <div
-              class="hours-bar"
-              @mousedown.stop.prevent="startHoursDrag($event, entry.key)"
-              @touchstart.stop.prevent="startHoursDrag($event, entry.key)"
-            >
-              <div
-                class="hours-bar-fill"
-                :style="{ width: ((dayHours.get(entry.key) ?? 0) / 24 * 100) + '%' }"
-              >
+            <div class="hours-bar" @mousedown.stop.prevent="startHoursDrag($event, entry.key)"
+              @touchstart.stop.prevent="startHoursDrag($event, entry.key)">
+              <div class="hours-bar-fill"
+                :style="{ transform: 'scaleX(' + ((dayHours.get(entry.key) ?? 0) / 12) + ')' }">
                 <div class="hours-bar-knob"></div>
               </div>
             </div>
-            <span class="hours-val" :class="{ over: dayTotals.get(group.dayTs) > 8 && (dayHours.get(entry.key) ?? 0) > 0 }">
+            <span class="hours-val"
+              :class="{ over: dayTotals.get(group.dayTs) > 8 && (dayHours.get(entry.key) ?? 0) > 0 }">
               {{ dayHours.get(entry.key) ?? 0 }}h
             </span>
           </div>
@@ -718,32 +721,37 @@ async function copyToClipboard() {
 }
 
 .hours-bar {
-  width: 52px;
-  height: 6px;
+  width: 80px;
+  height: 20px;
   background: #eee;
-  border-radius: 3px;
+  border-radius: 6px;
   position: relative;
-  cursor: ew-resize;
+  cursor: pointer;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 .hours-bar-fill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 6px;
   background: linear-gradient(90deg, #a7f3d0, #34d399);
   pointer-events: none;
   position: relative;
+  width: 100%;
+  transform-origin: left center;
+  will-change: transform;
 }
 
 .hours-bar-knob {
   position: absolute;
-  right: -6px;
+  right: -5px;
   top: 50%;
   transform: translateY(-50%);
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 20px;
   background: white;
-  border-radius: 50%;
+  border-radius: 5px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   pointer-events: none;
 }
@@ -752,9 +760,11 @@ async function copyToClipboard() {
   font-size: 12px;
   font-weight: 600;
   color: #1a1a1a;
-  min-width: 26px;
+  width: 36px;
+  min-width: 36px;
   text-align: right;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .hours-val.over {
