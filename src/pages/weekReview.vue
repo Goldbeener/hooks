@@ -54,7 +54,35 @@ const reviewTopics = computed(() =>
     }))
 );
 
-function getDayLabel(dayTs) {
+const priorityLabel = { high: "高", medium: "中", low: "低" };
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${dayLabel(ts)} ${hh}:${mm}`;
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}.${m}.${day}`;
+}
+
+function naturalDays(fromTs, toTs) {
+  const fromDay = new Date(new Date(fromTs).toDateString());
+  const toDay = new Date(new Date(toTs).toDateString());
+  return Math.round((toDay - fromDay) / 86400000);
+}
+
+function dayStartTs(ts) {
+  const d = new Date(ts);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+function getWeekdayLabel(dayTs) {
   const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
   return weekdays[new Date(dayTs).getDay()];
 }
@@ -86,6 +114,7 @@ const dayGroups = computed(() => {
         entryMap.get(dayTs).push(entry);
 
         // 跨天：若 progressAt 存在且不在同一天，额外生成进度中条目
+        // 仅当 progressAt 也在本周内时，才生成跨天进度条目
         if (item.progressAt && dayStartTs(item.progressAt) !== dayTs && item.progressAt >= weekStartTs) {
           const progDayTs = dayStartTs(item.progressAt);
           const progEntry = {
@@ -128,40 +157,12 @@ const dayGroups = computed(() => {
     const entries = entryMap.get(dayTs).sort((a, b) => a.sortTs - b.sortTs);
     return {
       dayTs,
-      dayLabel: getDayLabel(dayTs),
+      dayLabel: getWeekdayLabel(dayTs),
       dateLabel: getDateLabel(dayTs),
       entries,
     };
   });
 });
-
-const priorityLabel = { high: "高", medium: "中", low: "低" };
-
-function formatTime(ts) {
-  const d = new Date(ts);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${dayLabel(ts)} ${hh}:${mm}`;
-}
-
-function formatDate(ts) {
-  const d = new Date(ts);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}.${m}.${day}`;
-}
-
-function naturalDays(fromTs, toTs) {
-  const fromDay = new Date(new Date(fromTs).toDateString());
-  const toDay = new Date(new Date(toTs).toDateString());
-  return Math.round((toDay - fromDay) / 86400000);
-}
-
-function dayStartTs(ts) {
-  const d = new Date(ts);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-}
 
 function buildJsonData() {
   const result = [];
@@ -203,7 +204,7 @@ function buildJsonData() {
 async function copyToClipboard() {
   let content;
   if (viewMode.value === "day") {
-    content = JSON.stringify(buildJsonData(), null, 2); // Task 3 will replace this
+    content = JSON.stringify(buildJsonData(), null, 2); // Task 3 替换为 buildDayJsonData()
   } else {
     const lines = [];
     for (const topic of reviewTopics.value) {
