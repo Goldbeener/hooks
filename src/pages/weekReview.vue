@@ -6,7 +6,7 @@ const emit = defineEmits(["back"]);
 
 const topics = ref([]);
 const copyToast = ref(false);
-const copyFormat = ref("text"); // "text" | "json"
+const viewMode = ref("project"); // "project" | "day"
 
 onMounted(async () => {
   const store = await load("topics.json", { autoSave: false });
@@ -121,8 +121,8 @@ function buildJsonData() {
 
 async function copyToClipboard() {
   let content;
-  if (copyFormat.value === "json") {
-    content = JSON.stringify(buildJsonData(), null, 2);
+  if (viewMode.value === "day") {
+    content = JSON.stringify(buildJsonData(), null, 2); // Task 3 will replace this
   } else {
     const lines = [];
     for (const topic of reviewTopics.value) {
@@ -154,16 +154,15 @@ async function copyToClipboard() {
     <div class="page-header">
       <button class="back-btn" @click="emit('back')" title="返回">‹</button>
       <span class="page-title">本周完成</span>
-      <template v-if="reviewTopics.length > 0">
-        <label class="format-switch">
-          <span :class="{ active: copyFormat === 'text' }">文本</span>
-          <span class="switch-track" @click="copyFormat = copyFormat === 'text' ? 'json' : 'text'">
-            <span class="switch-thumb" :class="{ json: copyFormat === 'json' }"></span>
-          </span>
-          <span :class="{ active: copyFormat === 'json' }">JSON</span>
-        </label>
-        <button class="copy-btn" @click="copyToClipboard" title="复制到剪贴板">复制</button>
-      </template>
+      <div class="seg-control">
+        <button class="seg-btn" :class="{ active: viewMode === 'project' }" @click="viewMode = 'project'">项目</button>
+        <button class="seg-btn" :class="{ active: viewMode === 'day' }" @click="viewMode = 'day'">按天</button>
+      </div>
+      <button class="copy-btn" @click="copyToClipboard" title="复制到剪贴板">复制</button>
+    </div>
+    <div class="format-hint">
+      <span class="hint-dot"></span>
+      {{ viewMode === 'project' ? '复制为文本格式' : '复制为 JSON 格式，拖拽调整各任务工时' }}
     </div>
 
     <transition name="toast">
@@ -377,7 +376,6 @@ async function copyToClipboard() {
 }
 
 .copy-btn {
-  margin-left: auto;
   background: #1a1a1a;
   color: white;
   border: none;
@@ -388,51 +386,47 @@ async function copyToClipboard() {
   cursor: pointer;
 }
 
-.format-switch {
+.seg-control {
   margin-left: auto;
+  display: flex;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 9px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.seg-btn {
+  border: none;
+  border-radius: 7px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #888;
+  background: transparent;
+}
+
+.seg-btn.active {
+  background: white;
+  color: #1a1a1a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.format-hint {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
-  color: #aaa;
-  cursor: default;
-  user-select: none;
+  padding: 0 6px;
+  font-size: 11px;
+  color: #bbb;
 }
 
-.format-switch span.active {
-  color: #1a1a1a;
-  font-weight: 600;
-}
-
-.switch-track {
-  width: 30px;
-  height: 17px;
-  background: #ddd;
-  border-radius: 9px;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s;
-  flex-shrink: 0;
-}
-
-.switch-track:has(.switch-thumb.json) {
-  background: #1a1a1a;
-}
-
-.switch-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 13px;
-  height: 13px;
-  background: white;
+.hint-dot {
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.switch-thumb.json {
-  transform: translateX(13px);
+  background: #ccc;
+  flex-shrink: 0;
 }
 
 .copy-btn:active {
