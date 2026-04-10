@@ -330,29 +330,68 @@ async function copyToClipboard() {
       <div v-if="copyToast" class="toast">已复制到剪贴板</div>
     </transition>
 
-    <div v-if="reviewTopics.length === 0" class="empty">本周还没有完成的子任务</div>
-
-    <div v-else class="list">
-      <div v-for="topic in reviewTopics" :key="topic.id" class="topic-card" :class="topic.priority">
-        <div class="topic-header">
-          <span class="topic-title">{{ topic.title }}</span>
-          <span class="priority-badge" :class="topic.priority">{{ priorityLabel[topic.priority] }}</span>
-        </div>
-        <div class="items">
-          <div v-for="item in topic.doneItems" :key="item.id" class="item item-done">
-            <span class="checkbox done-check">✓</span>
-            <span class="item-text">{{ item.text }}</span>
-            <span class="item-time">{{ formatTime(item.doneAt) }}</span>
+    <template v-if="viewMode === 'project'">
+      <div v-if="reviewTopics.length === 0" class="empty">本周还没有完成的子任务</div>
+      <div v-else class="list">
+        <div v-for="topic in reviewTopics" :key="topic.id" class="topic-card" :class="topic.priority">
+          <div class="topic-header">
+            <span class="topic-title">{{ topic.title }}</span>
+            <span class="priority-badge" :class="topic.priority">{{ priorityLabel[topic.priority] }}</span>
           </div>
-          <div v-for="item in topic.progressItems" :key="item.id" class="item item-progress">
-            <span class="checkbox progress-check">…</span>
-            <span class="item-text">{{ item.text }}</span>
-            <span class="progress-badge">{{ item.progress }}%</span>
-            <span class="item-time">{{ formatTime(item.progressAt) }}</span>
+          <div class="items">
+            <div v-for="item in topic.doneItems" :key="item.id" class="item item-done">
+              <span class="checkbox done-check">✓</span>
+              <span class="item-text">{{ item.text }}</span>
+              <span class="item-time">{{ formatTime(item.doneAt) }}</span>
+            </div>
+            <div v-for="item in topic.progressItems" :key="item.id" class="item item-progress">
+              <span class="checkbox progress-check">…</span>
+              <span class="item-text">{{ item.text }}</span>
+              <span class="progress-badge">{{ item.progress }}%</span>
+              <span class="item-time">{{ formatTime(item.progressAt) }}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
+
+    <template v-else>
+      <div v-if="dayGroups.length === 0" class="empty">本周还没有完成的子任务</div>
+      <div v-else class="list day-list">
+        <div v-for="group in dayGroups" :key="group.dayTs" class="day-block">
+          <div class="day-header">
+            <span class="day-name">{{ group.dayLabel }}</span>
+            <span class="day-date">{{ group.dateLabel }}</span>
+            <span class="day-total" :class="{ over: getDayTotal(group) > 8 }">
+              {{ getDayTotal(group) }}h
+            </span>
+          </div>
+          <div v-for="entry in group.entries" :key="entry.key" class="day-task-row">
+            <span class="day-task-status" :class="entry.isDone ? 'done' : 'progress'">
+              {{ entry.isDone ? '✓' : '…' }}
+            </span>
+            <div class="day-task-info">
+              <span class="day-task-topic">{{ entry.topicTitle }}</span>
+              <span class="day-task-text">{{ entry.itemText }}</span>
+            </div>
+            <div
+              class="hours-bar"
+              @mousedown.stop.prevent="startHoursDrag($event, entry.key)"
+              @touchstart.stop.prevent="startHoursDrag($event, entry.key)"
+            >
+              <div
+                class="hours-bar-fill"
+                :style="{ width: ((dayHours.get(entry.key) ?? 0) / 24 * 100) + '%' }"
+              ></div>
+              <div class="hours-bar-knob"></div>
+            </div>
+            <span class="hours-val" :class="{ over: getDayTotal(group) > 8 && (dayHours.get(entry.key) ?? 0) > 0 }">
+              {{ dayHours.get(entry.key) ?? 0 }}h
+            </span>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -616,5 +655,134 @@ async function copyToClipboard() {
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
+}
+
+/* ===== 按天视图 ===== */
+.day-block {
+  flex-shrink: 0;
+}
+
+.day-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 2px 6px;
+}
+
+.day-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.day-date {
+  font-size: 11px;
+  color: #bbb;
+  flex: 1;
+}
+
+.day-total {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.day-total.over {
+  color: #e53e3e;
+  background: #fff0f0;
+}
+
+.day-task-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  margin-bottom: 4px;
+}
+
+.day-task-status {
+  font-size: 13px;
+  flex-shrink: 0;
+  width: 16px;
+}
+
+.day-task-status.done {
+  color: #38a169;
+}
+
+.day-task-status.progress {
+  color: #d97706;
+}
+
+.day-task-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.day-task-topic {
+  font-size: 10px;
+  color: #bbb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-task-text {
+  font-size: 12px;
+  color: #444;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hours-bar {
+  width: 52px;
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  position: relative;
+  cursor: ew-resize;
+  flex-shrink: 0;
+}
+
+.hours-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a7f3d0, #34d399);
+  pointer-events: none;
+}
+
+.hours-bar-knob {
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.hours-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a1a;
+  min-width: 26px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.hours-val.over {
+  color: #e53e3e;
 }
 </style>
