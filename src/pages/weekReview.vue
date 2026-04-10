@@ -20,6 +20,7 @@ const _diff = _day === 0 ? 6 : _day - 1; // 距本周一的天数
 weekStart.setDate(weekStart.getDate() - _diff);
 weekStart.setHours(0, 0, 0, 0);
 const weekStartTs = weekStart.getTime();
+const MS_PER_DAY = 86400000;
 
 function isWeekDone(item) {
   return item.done && item.doneAt >= weekStartTs;
@@ -214,7 +215,7 @@ function startHoursDrag(event, entryKey) {
   onMove(event);
   window.addEventListener("mousemove", onMove);
   window.addEventListener("mouseup", onUp);
-  window.addEventListener("touchmove", onMove, { passive: true });
+  window.addEventListener("touchmove", onMove, { passive: false });
   window.addEventListener("touchend", onUp);
   window.addEventListener("touchcancel", onUp);
 }
@@ -222,7 +223,7 @@ function startHoursDrag(event, entryKey) {
 function buildDayJsonData() {
   const result = [];
   for (const group of dayGroups.value) {
-    const dayEnd = group.dayTs + 86400000 - 1; // 当天 23:59:59.999
+    const dayEnd = group.dayTs + MS_PER_DAY - 1; // 当天 23:59:59.999
     for (const entry of group.entries) {
       const hours = dayHours.value.get(entry.key) ?? 0;
       const content = entry.isDone
