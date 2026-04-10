@@ -253,43 +253,6 @@ function buildDayJsonData() {
   return result;
 }
 
-function buildJsonData() {
-  const result = [];
-  for (const topic of reviewTopics.value) {
-    for (const item of topic.doneItems) {
-      const days = naturalDays(item.id, item.doneAt);
-      const name = `${topic.title} - ${item.text}`;
-      const hours = Math.max(1, days) * 8;
-      result.push({
-        startDate: formatDate(item.id),
-        lastUpdatedDate: formatDate(item.doneAt),
-        hours,
-        cardId: null,
-        content: name,
-        duration: [dayStartTs(item.id), dayStartTs(item.doneAt)],
-        plannedHours: hours,
-      });
-    }
-    for (const item of topic.progressItems) {
-      const now = Date.now();
-      const days = naturalDays(item.id, now);
-      const name = `${topic.title} - ${item.text}（${item.progress}%）`;
-      const hours = Math.max(1, days) * 8;
-      result.push({
-        name,
-        startDate: formatDate(item.id),
-        lastUpdatedDate: formatDate(item.progressAt),
-        hours,
-        cardId: null,
-        content: name,
-        duration: [dayStartTs(item.id), dayStartTs(item.progressAt)],
-        plannedHours: hours,
-      });
-    }
-  }
-  return result;
-}
-
 async function copyToClipboard() {
   let content;
   if (viewMode.value === "day") {
