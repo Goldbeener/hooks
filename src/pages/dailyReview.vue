@@ -16,7 +16,12 @@ onMounted(async () => {
 const todayStart = new Date();
 todayStart.setHours(0, 0, 0, 0);
 const todayStartTs = todayStart.getTime();
-const yesterdayStartTs = todayStartTs - 86400000;
+
+// 周一时，"昨日"扩展至上周五开始
+const isMonday = todayStart.getDay() === 1;
+const yesterdayStartTs = isMonday
+  ? todayStartTs - 3 * 86400000  // 周五 00:00
+  : todayStartTs - 86400000;     // 昨日 00:00
 
 function isDayDone(item) {
   if (showYesterday.value) {

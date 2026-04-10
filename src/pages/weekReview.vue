@@ -15,7 +15,9 @@ onMounted(async () => {
 });
 
 const weekStart = new Date();
-weekStart.setDate(weekStart.getDate() - 6);
+const _day = weekStart.getDay();
+const _diff = _day === 0 ? 6 : _day - 1; // 距本周一的天数
+weekStart.setDate(weekStart.getDate() - _diff);
 weekStart.setHours(0, 0, 0, 0);
 const weekStartTs = weekStart.getTime();
 
@@ -75,26 +77,42 @@ function naturalDays(fromTs, toTs) {
   return Math.round((toDay - fromDay) / 86400000);
 }
 
+function dayStartTs(ts) {
+  const d = new Date(ts);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
 function buildJsonData() {
   const result = [];
   for (const topic of reviewTopics.value) {
     for (const item of topic.doneItems) {
       const days = naturalDays(item.id, item.doneAt);
+      const name = `${topic.title} - ${item.text}`;
+      const hours = Math.max(1, days) * 8;
       result.push({
-        name: `${topic.title} - ${item.text}`,
         startDate: formatDate(item.id),
         lastUpdatedDate: formatDate(item.doneAt),
-        hours: Math.max(1, days) * 8,
+        hours,
+        cardId: null,
+        content: name,
+        duration: [dayStartTs(item.id), dayStartTs(item.doneAt)],
+        plannedHours: hours,
       });
     }
     for (const item of topic.progressItems) {
       const now = Date.now();
       const days = naturalDays(item.id, now);
+      const name = `${topic.title} - ${item.text}（${item.progress}%）`;
+      const hours = Math.max(1, days) * 8;
       result.push({
-        name: `${topic.title} - ${item.text}（${item.progress}%）`,
+        name,
         startDate: formatDate(item.id),
         lastUpdatedDate: formatDate(item.progressAt),
-        hours: Math.max(1, days) * 8,
+        hours,
+        cardId: null,
+        content: name,
+        duration: [dayStartTs(item.id), dayStartTs(item.progressAt)],
+        plannedHours: hours,
       });
     }
   }
