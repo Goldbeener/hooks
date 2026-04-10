@@ -165,6 +165,8 @@ const dayGroups = computed(() => {
   });
 });
 
+// IMPORTANT: 用 ref 而非 reactive，所有修改必须替换整个 Map 引用（new Map(...)），
+// 不可原地 dayHours.value.set()，否则模板不会更新。
 const dayHours = ref(new Map()); // key: entry.key, value: hours
 
 // When dayGroups changes, initialize default hours (preserve user-dragged values)
@@ -185,9 +187,17 @@ watch(
   { immediate: true }
 );
 
-function getDayTotal(group) {
-  return group.entries.reduce((sum, e) => sum + (dayHours.value.get(e.key) ?? 0), 0);
-}
+// 各天总工时，避免模板中重复计算
+const dayTotals = computed(() => {
+  const m = new Map();
+  for (const group of dayGroups.value) {
+    m.set(
+      group.dayTs,
+      group.entries.reduce((s, e) => s + (dayHours.value.get(e.key) ?? 0), 0)
+    );
+  }
+  return m;
+});
 
 function startHoursDrag(event, entryKey) {
   event.stopPropagation();
@@ -357,13 +367,13 @@ async function copyToClipboard() {
 
     <template v-else>
       <div v-if="dayGroups.length === 0" class="empty">本周还没有完成的子任务</div>
-      <div v-else class="list day-list">
+      <div v-else class="list">
         <div v-for="group in dayGroups" :key="group.dayTs" class="day-block">
           <div class="day-header">
             <span class="day-name">{{ group.dayLabel }}</span>
             <span class="day-date">{{ group.dateLabel }}</span>
-            <span class="day-total" :class="{ over: getDayTotal(group) > 8 }">
-              {{ getDayTotal(group) }}h
+            <span class="day-total" :class="{ over: dayTotals.get(group.dayTs) > 8 }">
+              {{ dayTotals.get(group.dayTs) }}h
             </span>
           </div>
           <div v-for="entry in group.entries" :key="entry.key" class="day-task-row">
@@ -382,10 +392,11 @@ async function copyToClipboard() {
               <div
                 class="hours-bar-fill"
                 :style="{ width: ((dayHours.get(entry.key) ?? 0) / 24 * 100) + '%' }"
-              ></div>
-              <div class="hours-bar-knob"></div>
+              >
+                <div class="hours-bar-knob"></div>
+              </div>
             </div>
-            <span class="hours-val" :class="{ over: getDayTotal(group) > 8 && (dayHours.get(entry.key) ?? 0) > 0 }">
+            <span class="hours-val" :class="{ over: dayTotals.get(group.dayTs) > 8 && (dayHours.get(entry.key) ?? 0) > 0 }">
               {{ dayHours.get(entry.key) ?? 0 }}h
             </span>
           </div>
@@ -758,11 +769,12 @@ async function copyToClipboard() {
   border-radius: 3px;
   background: linear-gradient(90deg, #a7f3d0, #34d399);
   pointer-events: none;
+  position: relative;
 }
 
 .hours-bar-knob {
   position: absolute;
-  right: -5px;
+  right: -6px;
   top: 50%;
   transform: translateY(-50%);
   width: 12px;
