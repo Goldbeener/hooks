@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { load } from "@tauri-apps/plugin-store";
 
 const emit = defineEmits(["back"]);
@@ -164,6 +164,84 @@ const dayGroups = computed(() => {
   });
 });
 
+const dayHours = ref(new Map()); // key: entry.key, value: hours
+
+// When dayGroups changes, initialize default hours (preserve user-dragged values)
+watch(
+  dayGroups,
+  (groups) => {
+    const newMap = new Map();
+    for (const group of groups) {
+      const count = group.entries.length;
+      const defaultHours = Math.max(0.5, Math.floor((8 / count) * 2) / 2);
+      for (const entry of group.entries) {
+        // Preserve values the user has already dragged
+        newMap.set(entry.key, dayHours.value.get(entry.key) ?? defaultHours);
+      }
+    }
+    dayHours.value = newMap;
+  },
+  { immediate: true }
+);
+
+function getDayTotal(group) {
+  return group.entries.reduce((sum, e) => sum + (dayHours.value.get(e.key) ?? 0), 0);
+}
+
+function startHoursDrag(event, entryKey) {
+  event.stopPropagation();
+  event.preventDefault();
+  const barEl = event.currentTarget;
+
+  function onMove(e) {
+    const rect = barEl.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    // Map ratio to 0.5–24h in 0.5h steps
+    const raw = ratio * 24;
+    const stepped = Math.max(0.5, Math.round(raw * 2) / 2);
+    dayHours.value = new Map(dayHours.value).set(entryKey, stepped);
+  }
+
+  function onUp() {
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
+    window.removeEventListener("touchmove", onMove);
+    window.removeEventListener("touchend", onUp);
+    window.removeEventListener("touchcancel", onUp);
+  }
+
+  onMove(event);
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
+  window.addEventListener("touchmove", onMove, { passive: true });
+  window.addEventListener("touchend", onUp);
+  window.addEventListener("touchcancel", onUp);
+}
+
+function buildDayJsonData() {
+  const result = [];
+  for (const group of dayGroups.value) {
+    const dayEnd = group.dayTs + 86400000 - 1; // 当天 23:59:59.999
+    for (const entry of group.entries) {
+      const hours = dayHours.value.get(entry.key) ?? 0;
+      const content = entry.isDone
+        ? `${entry.topicTitle} - ${entry.itemText}`
+        : `${entry.topicTitle} - ${entry.itemText}（${entry.progress}%）`;
+      result.push({
+        startDate: formatDate(entry.itemId),
+        lastUpdatedDate: formatDate(group.dayTs),
+        hours,
+        cardId: null,
+        content,
+        duration: [group.dayTs, dayEnd],
+        plannedHours: hours,
+      });
+    }
+  }
+  return result;
+}
+
 function buildJsonData() {
   const result = [];
   for (const topic of reviewTopics.value) {
@@ -204,7 +282,7 @@ function buildJsonData() {
 async function copyToClipboard() {
   let content;
   if (viewMode.value === "day") {
-    content = JSON.stringify(buildJsonData(), null, 2); // Task 3 替换为 buildDayJsonData()
+    content = JSON.stringify(buildDayJsonData(), null, 2);
   } else {
     const lines = [];
     for (const topic of reviewTopics.value) {
