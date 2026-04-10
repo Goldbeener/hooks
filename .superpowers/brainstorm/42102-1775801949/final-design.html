@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>最终设计确认</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; background: #f0f0f0; padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+  h2 { font-size: 15px; font-weight: 700; color: #1a1a1a; text-align: center; }
+  p.sub { font-size: 12px; color: #888; text-align: center; }
+
+  .split { display: flex; gap: 28px; justify-content: center; align-items: flex-start; }
+
+  .col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .col-title { font-size: 12px; font-weight: 700; color: #555; }
+
+  .app-window {
+    width: 310px;
+    background: rgba(255,255,255,0.92);
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.13);
+    overflow: hidden;
+  }
+
+  .page-header {
+    display: flex; align-items: center; gap: 7px;
+    padding: 14px 13px 10px;
+  }
+  .back-btn {
+    width: 30px; height: 30px; background: white; border: none;
+    border-radius: 9px; font-size: 20px; color: #666;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; padding-bottom: 2px;
+  }
+  .page-title { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+
+  .seg-control {
+    display: flex; background: rgba(0,0,0,0.06);
+    border-radius: 8px; padding: 2px; gap: 2px; margin-left: auto;
+  }
+  .seg-btn {
+    border: none; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    color: #888; background: transparent;
+  }
+  .seg-btn.active { background: white; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  .copy-btn {
+    background: #1a1a1a; color: white; border: none;
+    border-radius: 9px; padding: 6px 13px;
+    font-size: 12px; font-weight: 500; cursor: pointer; flex-shrink: 0;
+  }
+
+  /* Format hint row */
+  .format-hint {
+    padding: 0 13px 10px;
+    font-size: 11px; color: #bbb;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .format-hint .dot { width: 5px; height: 5px; border-radius: 50%; background: #bbb; flex-shrink: 0; }
+
+  /* List content */
+  .list-content { padding: 4px 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .topic-card { border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .topic-card.high { background: #fff5f5; }
+  .topic-card.medium { background: #fffdf0; }
+  .topic-header { display: flex; align-items: center; gap: 6px; padding: 9px 11px 7px; }
+  .topic-name { flex: 1; font-size: 13px; font-weight: 600; color: #1a1a1a; }
+  .pri-badge { border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 700; }
+  .pri-badge.high { background: #ffe0e0; color: #e53e3e; }
+  .pri-badge.medium { background: #fef3c7; color: #d97706; }
+  .topic-items { padding: 0 11px 8px; display: flex; flex-direction: column; gap: 4px; }
+  .item-row { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.7); border-radius: 8px; padding: 5px 8px; }
+  .item-check { font-size: 12px; flex-shrink: 0; }
+  .item-text { flex: 1; font-size: 12px; color: #555; text-decoration: line-through; }
+  .item-time { font-size: 10px; color: #ccc; white-space: nowrap; }
+
+  /* Day content */
+  .day-content { padding: 4px 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .day-block {}
+  .day-header {
+    display: flex; align-items: baseline; gap: 5px;
+    padding: 2px 2px 6px; border-bottom: 1px solid #ececec; margin-bottom: 5px;
+  }
+  .day-name { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+  .day-date { font-size: 11px; color: #bbb; }
+  .day-total { margin-left: auto; font-size: 11px; font-weight: 600; color: #666; background: rgba(0,0,0,0.05); border-radius: 5px; padding: 2px 7px; }
+  .day-total.over { color: #e53e3e; background: #fff0f0; }
+  .task-row {
+    display: flex; align-items: center; gap: 7px;
+    background: white; border-radius: 9px; padding: 6px 9px; margin-bottom: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .task-dot { font-size: 12px; flex-shrink: 0; }
+  .task-info { flex: 1; min-width: 0; }
+  .task-topic { font-size: 10px; color: #bbb; }
+  .task-name { font-size: 12px; color: #444; }
+  .hours-bar { width: 44px; height: 5px; background: #eee; border-radius: 3px; position: relative; flex-shrink: 0; }
+  .hours-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#a7f3d0,#34d399); }
+  .hours-knob { position: absolute; right: -4px; top: -4px; width: 11px; height: 11px; background: white; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.22); }
+  .task-hours { font-size: 12px; font-weight: 600; color: #1a1a1a; white-space: nowrap; min-width: 22px; text-align: right; }
+</style>
+</head>
+<body>
+
+<h2>最终设计确认稿</h2>
+<p class="sub">项目 / 按天 视图切换 · 格式说明文字替代开关</p>
+
+<div class="split">
+
+  <!-- 项目视图 -->
+  <div class="col">
+    <div class="col-title">项目视图</div>
+    <div class="app-window">
+      <div class="page-header">
+        <button class="back-btn">‹</button>
+        <span class="page-title">本周完成</span>
+        <div class="seg-control">
+          <button class="seg-btn active">项目</button>
+          <button class="seg-btn">按天</button>
+        </div>
+        <button class="copy-btn">复制</button>
+      </div>
+      <div class="format-hint">
+        <span class="dot"></span>
+        复制为文本格式
+      </div>
+      <div class="list-content">
+        <div class="topic-card high">
+          <div class="topic-header">
+            <span class="topic-name">需求研究</span>
+            <span class="pri-badge high">高</span>
+          </div>
+          <div class="topic-items">
+            <div class="item-row">
+              <span class="item-check" style="color:#38a169">✓</span>
+              <span class="item-text">登录页改版评审</span>
+              <span class="item-time">周二 14:30</span>
+            </div>
+          </div>
+        </div>
+        <div class="topic-card medium">
+          <div class="topic-header">
+            <span class="topic-name">API 设计</span>
+            <span class="pri-badge medium">中</span>
+          </div>
+          <div class="topic-items">
+            <div class="item-row">
+              <span class="item-check" style="color:#38a169">✓</span>
+              <span class="item-text">用户模块接口设计</span>
+              <span class="item-time">周三 18:00</span>
+            </div>
+            <div class="item-row">
+              <span class="item-check" style="color:#d97706">…</span>
+              <span class="item-text" style="text-decoration:none;color:#555">权限模块接口</span>
+              <span style="font-size:10px;color:#d97706;background:#fef3c7;border-radius:4px;padding:1px 5px;">60%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 按天视图 -->
+  <div class="col">
+    <div class="col-title">按天视图</div>
+    <div class="app-window">
+      <div class="page-header">
+        <button class="back-btn">‹</button>
+        <span class="page-title">本周完成</span>
+        <div class="seg-control">
+          <button class="seg-btn">项目</button>
+          <button class="seg-btn active">按天</button>
+        </div>
+        <button class="copy-btn">复制</button>
+      </div>
+      <div class="format-hint">
+        <span class="dot"></span>
+        复制为 JSON 格式，拖拽调整各任务工时
+      </div>
+      <div class="day-content">
+        <div class="day-block">
+          <div class="day-header">
+            <span class="day-name">周二</span>
+            <span class="day-date">4月8日</span>
+            <span class="day-total">8h</span>
+          </div>
+          <div class="task-row">
+            <span class="task-dot" style="color:#38a169">✓</span>
+            <div class="task-info">
+              <div class="task-topic">需求研究</div>
+              <div class="task-name">登录页改版评审</div>
+            </div>
+            <div class="hours-bar"><div class="hours-fill" style="width:50%"></div><div class="hours-knob"></div></div>
+            <span class="task-hours">4h</span>
+          </div>
+          <div class="task-row">
+            <span class="task-dot" style="color:#38a169">✓</span>
+            <div class="task-info">
+              <div class="task-topic">API 设计</div>
+              <div class="task-name">用户模块接口设计</div>
+            </div>
+            <div class="hours-bar"><div class="hours-fill" style="width:50%"></div><div class="hours-knob"></div></div>
+            <span class="task-hours">4h</span>
+          </div>
+        </div>
+        <div class="day-block">
+          <div class="day-header">
+            <span class="day-name">周三</span>
+            <span class="day-date">4月9日</span>
+            <span class="day-total over">10h</span>
+          </div>
+          <div class="task-row">
+            <span class="task-dot" style="color:#38a169">✓</span>
+            <div class="task-info">
+              <div class="task-topic">API 设计</div>
+              <div class="task-name">用户模块接口设计</div>
+            </div>
+            <div class="hours-bar"><div class="hours-fill" style="width:75%;background:linear-gradient(90deg,#fde68a,#f59e0b)"></div><div class="hours-knob"></div></div>
+            <span class="task-hours" style="color:#e53e3e">6h</span>
+          </div>
+          <div class="task-row">
+            <span class="task-dot" style="color:#d97706">…</span>
+            <div class="task-info">
+              <div class="task-topic">API 设计</div>
+              <div class="task-name">权限模块接口</div>
+            </div>
+            <div class="hours-bar"><div class="hours-fill" style="width:50%"></div><div class="hours-knob"></div></div>
+            <span class="task-hours">4h</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

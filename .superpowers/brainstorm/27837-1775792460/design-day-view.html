@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>按天视图 设计稿</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; background: #f0f0f0; display: flex; gap: 32px; padding: 24px; justify-content: center; align-items: flex-start; }
+
+  .label-col { width: 200px; flex-shrink: 0; padding-top: 8px; }
+  .label-col h3 { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 6px; }
+  .label-col p { font-size: 11px; color: #777; line-height: 1.6; margin-bottom: 12px; }
+  .label-col .tag { display: inline-block; background: #1a1a1a; color: white; border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 600; margin-bottom: 4px; }
+
+  /* App window simulation */
+  .app-window {
+    width: 368px;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  /* Header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 14px 12px;
+  }
+  .back-btn {
+    width: 32px; height: 32px;
+    background: white;
+    border: none; border-radius: 10px;
+    font-size: 20px; color: #666;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding-bottom: 2px;
+    flex-shrink: 0;
+  }
+  .page-title { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+
+  /* View toggle */
+  .view-toggle {
+    margin-left: auto;
+    display: flex;
+    background: rgba(0,0,0,0.06);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .view-tab {
+    border: none; border-radius: 6px;
+    padding: 4px 10px; font-size: 11px; font-weight: 500;
+    cursor: pointer; color: #888; background: transparent;
+  }
+  .view-tab.active { background: white; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  .copy-btn {
+    background: #1a1a1a; color: white;
+    border: none; border-radius: 8px;
+    padding: 5px 12px; font-size: 12px; font-weight: 500;
+    cursor: pointer; flex-shrink: 0;
+  }
+
+  /* Scrollable list */
+  .day-list {
+    padding: 0 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 520px;
+    overflow-y: auto;
+  }
+  .day-list::-webkit-scrollbar { display: none; }
+
+  /* Day block */
+  .day-block { }
+  .day-header {
+    display: flex; align-items: baseline; gap: 6px;
+    padding: 4px 2px 6px;
+  }
+  .day-name { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+  .day-date { font-size: 11px; color: #aaa; }
+  .day-total {
+    margin-left: auto;
+    font-size: 11px; font-weight: 600;
+    color: #666;
+    background: rgba(0,0,0,0.06);
+    border-radius: 6px;
+    padding: 2px 7px;
+  }
+  .day-total.over { color: #e53e3e; background: #fff0f0; }
+
+  /* Task rows */
+  .task-row {
+    background: white;
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .task-status { font-size: 13px; flex-shrink: 0; }
+  .task-name { flex: 1; font-size: 12px; color: #444; line-height: 1.3; }
+  .task-name .topic { color: #aaa; font-size: 11px; display: block; }
+
+  /* Hours drag control */
+  .hours-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .hours-val {
+    font-size: 12px; font-weight: 600; color: #1a1a1a;
+    min-width: 24px; text-align: right;
+  }
+  .hours-unit { font-size: 11px; color: #aaa; }
+  .drag-handle {
+    width: 14px; height: 20px;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    gap: 2px; cursor: ew-resize; opacity: 0.4;
+    padding: 0 2px;
+  }
+  .drag-handle span {
+    display: block; width: 2px; height: 2px;
+    background: #666; border-radius: 50%;
+  }
+  .drag-handle span:nth-child(2) { height: 8px; border-radius: 1px; }
+
+  /* Progress bar style drag - alternative */
+  .hours-bar-wrap {
+    width: 56px; height: 6px;
+    background: #eee; border-radius: 3px;
+    position: relative; cursor: ew-resize; flex-shrink: 0;
+  }
+  .hours-bar-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, #a7f3d0, #34d399);
+  }
+  .hours-bar-fill.medium { background: linear-gradient(90deg, #fde68a, #f59e0b); }
+  .hours-bar-knob {
+    position: absolute; right: -4px; top: -3px;
+    width: 12px; height: 12px;
+    background: white; border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+
+  /* Summary footer in day */
+  .day-summary {
+    display: flex; justify-content: flex-end;
+    padding: 2px 2px 0;
+    font-size: 11px; color: #bbb;
+  }
+
+  /* Annotation arrows */
+  .annotation {
+    position: relative;
+  }
+</style>
+</head>
+<body>
+
+<!-- Left annotations -->
+<div class="label-col">
+  <div class="tag">新增</div>
+  <h3>视图切换</h3>
+  <p>原有"文本/JSON"切换保留。新增"按天"Tab。切换后进入按天视图。</p>
+
+  <div class="tag">按天聚合</div>
+  <h3>天区块</h3>
+  <p>每天一个区块，显示当天有更新的所有任务（完成 ✓ 或进度中 …）。</p>
+
+  <div class="tag">拖拽</div>
+  <h3>工时调整</h3>
+  <p>每行右侧有一个拖拽进度条，左右拖动调整当天工时（0.5h 步进）。数字实时更新。</p>
+
+  <div class="tag">汇总</div>
+  <h3>每天总计</h3>
+  <p>天标题右侧实时显示当天所有任务工时之和。超过 8h 时变红提示。</p>
+
+  <div class="tag">复制</div>
+  <h3>生成 JSON</h3>
+  <p>点击"复制"，用户拖拽调整的工时作为各任务的 plannedHours；duration 固定为当天 [dayStart, dayEnd]。</p>
+</div>
+
+<!-- App mockup -->
+<div class="app-window">
+  <div class="page-header">
+    <button class="back-btn">‹</button>
+    <span class="page-title">本周完成</span>
+    <div class="view-toggle">
+      <button class="view-tab">文本</button>
+      <button class="view-tab">JSON</button>
+      <button class="view-tab active">按天</button>
+    </div>
+    <button class="copy-btn">复制</button>
+  </div>
+
+  <div class="day-list">
+
+    <!-- Monday -->
+    <div class="day-block">
+      <div class="day-header">
+        <span class="day-name">周一</span>
+        <span class="day-date">4月7日</span>
+        <span class="day-total">8h</span>
+      </div>
+      <div class="task-row">
+        <span class="task-status" style="color:#38a169">✓</span>
+        <div class="task-name">
+          <span class="topic">需求研究</span>
+          登录页改版评审
+        </div>
+        <div class="hours-control">
+          <div class="hours-bar-wrap">
+            <div class="hours-bar-fill" style="width:50%"></div>
+            <div class="hours-bar-knob"></div>
+          </div>
+          <span class="hours-val">4</span>
+          <span class="hours-unit">h</span>
+        </div>
+      </div>
+      <div class="task-row">
+        <span class="task-status" style="color:#d97706">…</span>
+        <div class="task-name">
+          <span class="topic">API 设计</span>
+          用户模块接口设计
+        </div>
+        <div class="hours-control">
+          <div class="hours-bar-wrap">
+            <div class="hours-bar-fill" style="width:50%"></div>
+            <div class="hours-bar-knob"></div>
+          </div>
+          <span class="hours-val">4</span>
+          <span class="hours-unit">h</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tuesday -->
+    <div class="day-block">
+      <div class="day-header">
+        <span class="day-name">周二</span>
+        <span class="day-date">4月8日</span>
+        <span class="day-total over">10h</span>
+      </div>
+      <div class="task-row">
+        <span class="task-status" style="color:#38a169">✓</span>
+        <div class="task-name">
+          <span class="topic">需求研究</span>
+          登录页改版评审
+        </div>
+        <div class="hours-control">
+          <div class="hours-bar-wrap">
+            <div class="hours-bar-fill medium" style="width:75%"></div>
+            <div class="hours-bar-knob"></div>
+          </div>
+          <span class="hours-val" style="color:#e53e3e">6</span>
+          <span class="hours-unit">h</span>
+        </div>
+      </div>
+      <div class="task-row">
+        <span class="task-status" style="color:#38a169">✓</span>
+        <div class="task-name">
+          <span class="topic">API 设计</span>
+          用户模块接口设计
+        </div>
+        <div class="hours-control">
+          <div class="hours-bar-wrap">
+            <div class="hours-bar-fill" style="width:50%"></div>
+            <div class="hours-bar-knob"></div>
+          </div>
+          <span class="hours-val">4</span>
+          <span class="hours-unit">h</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thursday -->
+    <div class="day-block">
+      <div class="day-header">
+        <span class="day-name">周四</span>
+        <span class="day-date">4月10日</span>
+        <span class="day-total">8h</span>
+      </div>
+      <div class="task-row">
+        <span class="task-status" style="color:#d97706">…</span>
+        <div class="task-name">
+          <span class="topic">前端开发</span>
+          首页重构
+        </div>
+        <div class="hours-control">
+          <div class="hours-bar-wrap">
+            <div class="hours-bar-fill" style="width:100%"></div>
+            <div class="hours-bar-knob" style="right:-4px"></div>
+          </div>
+          <span class="hours-val">8</span>
+          <span class="hours-unit">h</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Right annotations -->
+<div class="label-col">
+  <div class="tag" style="background:#555">说明</div>
+  <h3>工时拖拽交互</h3>
+  <p>在任务行右侧，有一个小进度条 + 数值。<br>鼠标左右拖动进度条，数值以 <strong>0.5h</strong> 为步进实时变化。</p>
+
+  <div style="margin-top:16px">
+  <div class="tag" style="background:#555">说明</div>
+  <h3>任务跨天展示</h3>
+  <p>若一项任务在周一和周二都有记录（完成或进度更新），则在两天各自独立出现，工时单独设置。</p>
+  </div>
+
+  <div style="margin-top:16px">
+  <div class="tag" style="background:#d97706">注意</div>
+  <h3>超时提示</h3>
+  <p>当天总工时 > 8h 时，右上角合计数字变红（如周二 10h）。仅提示，不限制。</p>
+  </div>
+
+  <div style="margin-top:16px">
+  <div class="tag" style="background:#38a169">数据</div>
+  <h3>复制 JSON 逻辑</h3>
+  <p>每个任务在每天生成一条 JSON 记录：<br>
+  · <code>plannedHours</code> = 拖拽设定的工时<br>
+  · <code>duration</code> = [当天00:00, 当天23:59]<br>
+  · <code>hours</code> = 同 plannedHours</p>
+  </div>
+</div>
+
+</body>
+</html>

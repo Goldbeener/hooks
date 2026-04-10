@@ -1,0 +1,96 @@
+<h2>按天视图：3 种实现方案</h2>
+<p class="subtitle">选择你倾向的交互方向，我会据此深化设计</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>竖向时间轴（推荐）</h3>
+      <p>页面按周一→周日纵向排列，每天是一个区块。每个任务用一个行条展示，右侧有数字输入 + 拖拽手柄调整工时。当天底部显示总工时汇总。</p>
+      <div style="margin-top:10px;background:#f8f8f8;border-radius:8px;padding:10px;font-size:12px;color:#555;font-family:monospace;">
+        <div style="color:#888;font-size:11px;margin-bottom:6px">周一 4月7日</div>
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 6px;background:white;border-radius:6px;margin-bottom:4px;">
+          <span style="color:#38a169;font-size:11px;">✓</span>
+          <span style="flex:1;font-size:11px;">需求评审 - 登录改版</span>
+          <span style="font-size:11px;color:#d97706;font-weight:600;">3h ⠿</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 6px;background:white;border-radius:6px;margin-bottom:4px;">
+          <span style="color:#d97706;font-size:11px;">…</span>
+          <span style="flex:1;font-size:11px;">API设计 - 用户模块</span>
+          <span style="font-size:11px;color:#d97706;font-weight:600;">5h ⠿</span>
+        </div>
+        <div style="text-align:right;font-size:11px;color:#aaa;margin-top:4px;padding-top:4px;border-top:1px solid #eee;">合计 8h</div>
+      </div>
+      <div class="pros-cons" style="margin-top:8px">
+        <div class="pros"><ul><li>符合周报按天阅读的习惯</li><li>总工时一目了然</li></ul></div>
+        <div class="cons"><ul><li>任务多时页面较长</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>横向甘特风格</h3>
+      <p>左侧列出所有任务，右侧是周一→周日的列，每个格子里可以输入当天工时。适合任务少、天数对比明显的场景。</p>
+      <div style="margin-top:10px;background:#f8f8f8;border-radius:8px;padding:10px;font-size:11px;color:#555;font-family:monospace;overflow:auto;">
+        <table style="border-collapse:collapse;width:100%">
+          <tr style="color:#888">
+            <td style="padding:2px 6px;min-width:80px">任务</td>
+            <td style="padding:2px 4px;text-align:center">一</td>
+            <td style="padding:2px 4px;text-align:center">二</td>
+            <td style="padding:2px 4px;text-align:center">三</td>
+            <td style="padding:2px 4px;text-align:center">四</td>
+            <td style="padding:2px 4px;text-align:center">五</td>
+          </tr>
+          <tr>
+            <td style="padding:2px 6px;font-size:10px">登录改版</td>
+            <td style="padding:2px 4px;text-align:center;background:#dcfce7;border-radius:3px">3h</td>
+            <td style="padding:2px 4px;text-align:center;background:#dcfce7;border-radius:3px">5h</td>
+            <td style="padding:2px 4px;text-align:center;color:#ddd">-</td>
+            <td style="padding:2px 4px;text-align:center;color:#ddd">-</td>
+            <td style="padding:2px 4px;text-align:center;color:#ddd">-</td>
+          </tr>
+          <tr>
+            <td style="padding:2px 6px;font-size:10px">用户模块API</td>
+            <td style="padding:2px 4px;text-align:center;background:#fef3c7;border-radius:3px">5h</td>
+            <td style="padding:2px 4px;text-align:center;color:#ddd">-</td>
+            <td style="padding:2px 4px;text-align:center;background:#fef3c7;border-radius:3px">8h</td>
+            <td style="padding:2px 4px;text-align:center;color:#ddd">-</td>
+            <td style="padding:2px 4px;text-align:center;color:#ddd">-</td>
+          </tr>
+        </table>
+      </div>
+      <div class="pros-cons" style="margin-top:8px">
+        <div class="pros"><ul><li>跨天对比清晰</li></ul></div>
+        <div class="cons"><ul><li>窗口宽 400px，横向空间很紧张</li><li>与现有竖向 UI 风格差异大</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Tab 分天浏览</h3>
+      <p>顶部显示周一～周日的 Tab，每个 Tab 内展示当天的任务列表，每项任务有工时拖拽条。一次只看一天。</p>
+      <div style="margin-top:10px;background:#f8f8f8;border-radius:8px;padding:10px;font-size:12px;font-family:monospace;">
+        <div style="display:flex;gap:4px;margin-bottom:8px">
+          <span style="background:#1a1a1a;color:white;padding:2px 8px;border-radius:6px;font-size:10px">一</span>
+          <span style="background:#eee;color:#888;padding:2px 8px;border-radius:6px;font-size:10px">二</span>
+          <span style="background:#eee;color:#888;padding:2px 8px;border-radius:6px;font-size:10px">三</span>
+          <span style="background:#eee;color:#888;padding:2px 8px;border-radius:6px;font-size:10px">四</span>
+          <span style="background:#eee;color:#888;padding:2px 8px;border-radius:6px;font-size:10px">五</span>
+        </div>
+        <div style="padding:4px 0;color:#555;font-size:11px">周一 · 2 个任务 · 合计 8h</div>
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 6px;background:white;border-radius:6px;margin-top:4px;">
+          <span style="flex:1;font-size:11px;">需求评审 - 登录改版</span>
+          <span style="font-size:11px;color:#d97706;font-weight:600;">3h ⠿</span>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:8px">
+        <div class="pros"><ul><li>聚焦单天，不被其他天干扰</li><li>符合现有 dailyReview 的 Tab 模式</li></ul></div>
+        <div class="cons"><ul><li>无法一眼看到全周</li><li>切换 Tab 才能看到汇总</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

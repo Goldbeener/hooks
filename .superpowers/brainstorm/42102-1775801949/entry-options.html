@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>按天入口方式对比</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; background: #f0f0f0; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+
+  h2 { font-size: 16px; font-weight: 700; color: #1a1a1a; text-align: center; }
+  p.sub { font-size: 12px; color: #888; text-align: center; margin-top: 4px; }
+
+  .split { display: flex; gap: 24px; justify-content: center; align-items: flex-start; }
+
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .col-label { font-size: 13px; font-weight: 700; color: #333; }
+  .col-desc { font-size: 11px; color: #777; text-align: center; max-width: 200px; line-height: 1.6; }
+
+  .app-window {
+    width: 300px;
+    background: rgba(255,255,255,0.92);
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.13);
+    overflow: hidden;
+  }
+
+  .state-label { padding: 6px 12px 2px; font-size: 10px; color: #bbb; }
+
+  .page-header {
+    display: flex; align-items: center; gap: 7px;
+    padding: 12px 12px 10px;
+  }
+  .back-btn {
+    width: 28px; height: 28px; background: white; border: none;
+    border-radius: 8px; font-size: 18px; color: #666;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; padding-bottom: 2px;
+  }
+  .page-title { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+
+  .format-toggle {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; color: #aaa;
+  }
+  .format-toggle span.active { color: #1a1a1a; font-weight: 600; }
+  .switch-track {
+    width: 24px; height: 14px; background: #ddd; border-radius: 7px;
+    position: relative;
+  }
+  .switch-thumb {
+    position: absolute; top: 2px; left: 2px;
+    width: 10px; height: 10px; background: white; border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  .day-icon-btn {
+    width: 28px; height: 28px; background: white; border: none;
+    border-radius: 8px; font-size: 13px; color: #666;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .day-icon-btn.active { background: #1a1a1a; color: white; }
+
+  .copy-btn {
+    background: #1a1a1a; color: white; border: none;
+    border-radius: 8px; padding: 4px 10px;
+    font-size: 11px; font-weight: 500; cursor: pointer; flex-shrink: 0;
+  }
+
+  .seg-control {
+    display: flex; background: rgba(0,0,0,0.06);
+    border-radius: 8px; padding: 2px; gap: 2px;
+  }
+  .seg-btn {
+    border: none; border-radius: 6px; padding: 3px 9px;
+    font-size: 11px; font-weight: 500; cursor: pointer;
+    color: #888; background: transparent;
+  }
+  .seg-btn.active { background: white; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  .format-row {
+    padding: 0 12px 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .format-note { padding: 0 12px 8px; font-size: 10px; color: #bbb; }
+
+  .day-content { padding: 6px 12px 12px; }
+  .day-header {
+    display: flex; align-items: baseline; gap: 5px;
+    padding: 2px 2px 5px; border-bottom: 1px solid #f0f0f0; margin-bottom: 5px;
+  }
+  .day-name { font-size: 12px; font-weight: 700; color: #1a1a1a; }
+  .day-date { font-size: 10px; color: #bbb; }
+  .day-total { margin-left: auto; font-size: 10px; font-weight: 600; color: #666; background: rgba(0,0,0,0.05); border-radius: 5px; padding: 1px 6px; }
+  .task-row {
+    display: flex; align-items: center; gap: 6px;
+    background: white; border-radius: 8px; padding: 5px 8px; margin-bottom: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .task-dot { font-size: 11px; flex-shrink: 0; }
+  .task-name { flex: 1; font-size: 11px; color: #444; }
+  .hours-bar { width: 40px; height: 5px; background: #eee; border-radius: 3px; position: relative; flex-shrink: 0; }
+  .hours-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#a7f3d0,#34d399); }
+  .hours-knob { position: absolute; right: -3px; top: -4px; width: 10px; height: 10px; background: white; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .task-hours { font-size: 11px; font-weight: 600; color: #1a1a1a; white-space: nowrap; }
+
+  .divider { width: 1px; background: #ddd; align-self: stretch; margin: 20px 0; }
+
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 5px; margin-bottom: 6px; }
+  .badge.a { background: #dbeafe; color: #1d4ed8; }
+  .badge.b { background: #ede9fe; color: #7c3aed; }
+
+  .separator { height: 1px; background: #f0f0f0; margin: 2px 0; }
+</style>
+</head>
+<body>
+
+<h2>按天视图入口：两种独立方式</h2>
+<p class="sub">文本/JSON 是格式维度，按天是视图维度 —— 分开表达</p>
+
+<div class="split">
+
+  <!-- Option A -->
+  <div class="col">
+    <span class="badge a">A · 图标按钮</span>
+
+    <div class="app-window">
+      <div class="state-label">列表模式</div>
+      <div class="page-header">
+        <button class="back-btn">‹</button>
+        <span class="page-title">本周完成</span>
+        <div class="format-toggle">
+          <span class="active">文本</span>
+          <div class="switch-track"><div class="switch-thumb"></div></div>
+          <span>JSON</span>
+        </div>
+        <button class="day-icon-btn">📅</button>
+        <button class="copy-btn">复制</button>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="state-label" style="margin-top:4px">按天模式（图标高亮，格式开关隐藏）</div>
+      <div class="page-header">
+        <button class="back-btn">‹</button>
+        <span class="page-title">本周完成</span>
+        <div style="flex:1"></div>
+        <button class="day-icon-btn active">📅</button>
+        <button class="copy-btn">复制</button>
+      </div>
+
+      <div class="day-content">
+        <div class="day-header">
+          <span class="day-name">周一</span><span class="day-date">4月7日</span>
+          <span class="day-total">8h</span>
+        </div>
+        <div class="task-row">
+          <span class="task-dot" style="color:#38a169">✓</span>
+          <span class="task-name">登录页改版评审</span>
+          <div class="hours-bar"><div class="hours-fill" style="width:50%"></div><div class="hours-knob"></div></div>
+          <span class="task-hours">4h</span>
+        </div>
+        <div class="task-row">
+          <span class="task-dot" style="color:#d97706">…</span>
+          <span class="task-name">用户模块接口设计</span>
+          <div class="hours-bar"><div class="hours-fill" style="width:50%"></div><div class="hours-knob"></div></div>
+          <span class="task-hours">4h</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="col-desc">页头右侧加一个图标按钮，点击切换，激活时高亮。格式开关（文本/JSON）在按天模式下自动隐藏，因为按天只输出 JSON。</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Option B -->
+  <div class="col">
+    <span class="badge b">B · 分段控件</span>
+
+    <div class="app-window">
+      <div class="state-label">列表模式</div>
+      <div class="page-header">
+        <button class="back-btn">‹</button>
+        <span class="page-title">本周完成</span>
+        <div class="seg-control" style="margin-left:auto">
+          <button class="seg-btn active">列表</button>
+          <button class="seg-btn">按天</button>
+        </div>
+        <button class="copy-btn">复制</button>
+      </div>
+      <div class="format-row">
+        <div class="format-toggle">
+          <span class="active">文本</span>
+          <div class="switch-track"><div class="switch-thumb"></div></div>
+          <span>JSON</span>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="state-label" style="margin-top:4px">按天模式（格式行消失）</div>
+      <div class="page-header">
+        <button class="back-btn">‹</button>
+        <span class="page-title">本周完成</span>
+        <div class="seg-control" style="margin-left:auto">
+          <button class="seg-btn">列表</button>
+          <button class="seg-btn active">按天</button>
+        </div>
+        <button class="copy-btn">复制</button>
+      </div>
+      <div class="format-note">按天模式仅输出 JSON</div>
+
+      <div class="day-content">
+        <div class="day-header">
+          <span class="day-name">周一</span><span class="day-date">4月7日</span>
+          <span class="day-total">8h</span>
+        </div>
+        <div class="task-row">
+          <span class="task-dot" style="color:#38a169">✓</span>
+          <span class="task-name">登录页改版评审</span>
+          <div class="hours-bar"><div class="hours-fill" style="width:50%"></div><div class="hours-knob"></div></div>
+          <span class="task-hours">4h</span>
+        </div>
+        <div class="task-row">
+          <span class="task-dot" style="color:#d97706">…</span>
+          <span class="task-name">用户模块接口设计</span>
+          <div class="hours-bar"><div class="hours-fill" style="width:50%"></div><div class="hours-knob"></div></div>
+          <span class="task-hours">4h</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="col-desc">页头"列表 / 按天"分段控件，视图维度语义更清晰。格式开关（文本/JSON）在列表模式下单独一行显示，按天模式隐藏。</p>
+  </div>
+
+</div>
+
+</body>
+</html>
