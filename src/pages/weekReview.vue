@@ -105,6 +105,7 @@ const dayGroups = computed(() => {
           key: `${topic.id}-${item.id}-done`,
           dayTs,
           topicTitle: topic.title,
+          topicCode: topic.code || null,
           itemId: item.id,
           itemText: item.text,
           progress: null,
@@ -122,6 +123,7 @@ const dayGroups = computed(() => {
             key: `${topic.id}-${item.id}-progress`,
             dayTs: progDayTs,
             topicTitle: topic.title,
+            topicCode: topic.code || null,
             itemId: item.id,
             itemText: item.text,
             progress: item.progress,
@@ -140,6 +142,7 @@ const dayGroups = computed(() => {
           key: `${topic.id}-${item.id}-progress`,
           dayTs,
           topicTitle: topic.title,
+          topicCode: topic.code || null,
           itemId: item.id,
           itemText: item.text,
           progress: item.progress,
@@ -204,6 +207,7 @@ function startHoursDrag(event, entryKey) {
   event.preventDefault();
   const barEl = event.currentTarget;
   const fillEl = barEl.querySelector(".hours-bar-fill");
+  const knobEl = barEl.querySelector(".hours-bar-knob");
   const valEl = barEl.closest(".day-task-row").querySelector(".hours-val");
   let currentStepped = dayHours.value.get(entryKey) ?? 0;
 
@@ -217,6 +221,7 @@ function startHoursDrag(event, entryKey) {
     currentStepped = Math.round(raw * 2) / 2;
     // Direct DOM update — bypasses Vue reactivity entirely, no reflow
     fillEl.style.transform = `scaleX(${currentStepped / 12})`;
+    if (knobEl) knobEl.style.left = `${(currentStepped / 12) * 100}%`;
     if (valEl) valEl.textContent = `${currentStepped}h`;
   }
 
@@ -250,7 +255,7 @@ function buildDayJsonData() {
       result.push({
         startDate: formatDate(entry.itemId),
         lastUpdatedDate: formatDate(group.dayTs),
-        cardId: null,
+        cardId: entry.topicCode,
         content,
         duration: [group.dayTs, dayEnd],
         plannedHours: hours,
@@ -267,7 +272,8 @@ async function copyToClipboard() {
   } else {
     const lines = [];
     for (const topic of reviewTopics.value) {
-      lines.push(`【${topic.title}】`);
+      const codeStr = topic.code ? ` #${topic.code}` : "";
+      lines.push(`【${topic.title}${codeStr}】`);
       for (const item of topic.doneItems) {
         const days = naturalDays(item.id, item.doneAt);
         const dateRange = `${formatDate(item.id)} - ${formatDate(item.doneAt)}`;
@@ -358,7 +364,9 @@ async function copyToClipboard() {
               @touchstart.stop.prevent="startHoursDrag($event, entry.key)">
               <div class="hours-bar-fill"
                 :style="{ transform: 'scaleX(' + ((dayHours.get(entry.key) ?? 0) / 12) + ')' }">
-                <div class="hours-bar-knob"></div>
+              </div>
+              <div class="hours-bar-knob"
+                :style="{ left: ((dayHours.get(entry.key) ?? 0) / 12 * 100) + '%' }">
               </div>
             </div>
             <span class="hours-val"
@@ -683,9 +691,9 @@ async function copyToClipboard() {
 }
 
 .day-task-status {
-  font-size: 13px;
+  font-size: 15px;
   flex-shrink: 0;
-  width: 16px;
+  width: 18px;
 }
 
 .day-task-status.done {
@@ -705,7 +713,7 @@ async function copyToClipboard() {
 }
 
 .day-task-topic {
-  font-size: 10px;
+  font-size: 11px;
   color: #bbb;
   white-space: nowrap;
   overflow: hidden;
@@ -713,8 +721,8 @@ async function copyToClipboard() {
 }
 
 .day-task-text {
-  font-size: 12px;
-  color: #444;
+  font-size: 14px;
+  color: #555;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -745,9 +753,8 @@ async function copyToClipboard() {
 
 .hours-bar-knob {
   position: absolute;
-  right: -5px;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
   width: 10px;
   height: 20px;
   background: white;

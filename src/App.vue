@@ -16,6 +16,7 @@ import WeekReview from './pages/weekReview.vue';
 
 const topics = ref([]);
 const newTopicText = ref("");
+const newTopicCode = ref("");
 const newItemText = ref({});
 const collapsed = ref(false);
 const contentVisible = ref(true);
@@ -169,8 +170,10 @@ const sortedTopics = computed(() => {
 function addTopic() {
   const text = newTopicText.value.trim();
   if (!text) return;
-  topics.value.push({ id: Date.now(), createdAt: Date.now(), title: text, priority: "medium", expanded: true, items: [] });
+  const code = newTopicCode.value.trim().replace(/\D/g, "").slice(0, 4) || null;
+  topics.value.push({ id: Date.now(), createdAt: Date.now(), title: text, code, priority: "medium", expanded: true, items: [] });
   newTopicText.value = "";
+  // 保留上次输入的 code，方便连续添加同一类主题
 }
 
 function removeTopic(id) {
@@ -344,6 +347,7 @@ function startDragProgress(event, item) {
         <template v-if="contentVisible">
           <div class="input-row">
             <input v-model="newTopicText" placeholder="新建主题..." @keydown.enter="addTopic" />
+            <input v-model="newTopicCode" placeholder="ID" class="code-input" maxlength="4" inputmode="numeric" @keydown.enter="addTopic" />
             <button class="add-btn" @click="addTopic">+</button>
           </div>
 
@@ -355,8 +359,9 @@ function startDragProgress(event, item) {
                   <FolderOpen v-if="!topic.expanded" />
                   <FolderClosed v-else />
                 </button>
-                <span class="topic-title" :class="{ strikethrough: isTopicDone(topic) }">
-                  {{ topic.title }}
+                <span class="topic-title-group">
+                  <span class="topic-title" :class="{ strikethrough: isTopicDone(topic) }">{{ topic.title }}</span>
+                  <span v-if="topic.code" class="topic-code">#{{ topic.code }}</span>
                 </span>
                 <span class="progress">{{topic.items.filter(i => i.done).length}}/{{ topic.items.length }}</span>
                 <button class="priority-btn" :class="topic.priority" @click="cyclePriority(topic)">
@@ -627,6 +632,21 @@ function startDragProgress(event, item) {
   line-height: 1;
 }
 
+.code-input {
+  width: 52px;
+  padding: 11px 8px;
+  border: none;
+  border-radius: 12px;
+  background: white;
+  font-size: 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  outline: none;
+  text-align: center;
+  color: #888;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -697,11 +717,29 @@ function startDragProgress(event, item) {
   display: block;
 }
 
-.topic-title {
+.topic-title-group {
   flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+
+.topic-title {
   font-size: 15px;
   font-weight: 600;
   color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topic-code {
+  font-size: 11px;
+  color: #bbb;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 .topic-title.strikethrough {
