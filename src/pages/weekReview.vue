@@ -54,6 +54,87 @@ const reviewTopics = computed(() =>
     }))
 );
 
+function getDayLabel(dayTs) {
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  return weekdays[new Date(dayTs).getDay()];
+}
+
+function getDateLabel(dayTs) {
+  const d = new Date(dayTs);
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+const dayGroups = computed(() => {
+  const entryMap = new Map(); // key: dayTs, value: DayEntry[]
+
+  for (const topic of topics.value) {
+    for (const item of topic.items) {
+      // 已完成条目
+      if (item.done && item.doneAt >= weekStartTs) {
+        const dayTs = dayStartTs(item.doneAt);
+        const entry = {
+          key: `${topic.id}-${item.id}-done`,
+          dayTs,
+          topicTitle: topic.title,
+          itemId: item.id,
+          itemText: item.text,
+          progress: null,
+          isDone: true,
+          sortTs: item.doneAt,
+        };
+        if (!entryMap.has(dayTs)) entryMap.set(dayTs, []);
+        entryMap.get(dayTs).push(entry);
+
+        // 跨天：若 progressAt 存在且不在同一天，额外生成进度中条目
+        if (item.progressAt && dayStartTs(item.progressAt) !== dayTs && item.progressAt >= weekStartTs) {
+          const progDayTs = dayStartTs(item.progressAt);
+          const progEntry = {
+            key: `${topic.id}-${item.id}-progress`,
+            dayTs: progDayTs,
+            topicTitle: topic.title,
+            itemId: item.id,
+            itemText: item.text,
+            progress: item.progress,
+            isDone: false,
+            sortTs: item.progressAt,
+          };
+          if (!entryMap.has(progDayTs)) entryMap.set(progDayTs, []);
+          entryMap.get(progDayTs).push(progEntry);
+        }
+      }
+
+      // 进度中条目（未完成）
+      if (!item.done && item.progress > 0 && item.progressAt && item.progressAt >= weekStartTs) {
+        const dayTs = dayStartTs(item.progressAt);
+        const entry = {
+          key: `${topic.id}-${item.id}-progress`,
+          dayTs,
+          topicTitle: topic.title,
+          itemId: item.id,
+          itemText: item.text,
+          progress: item.progress,
+          isDone: false,
+          sortTs: item.progressAt,
+        };
+        if (!entryMap.has(dayTs)) entryMap.set(dayTs, []);
+        entryMap.get(dayTs).push(entry);
+      }
+    }
+  }
+
+  // 排序并组装 DayGroup
+  const sortedDays = [...entryMap.keys()].sort((a, b) => a - b);
+  return sortedDays.map((dayTs) => {
+    const entries = entryMap.get(dayTs).sort((a, b) => a.sortTs - b.sortTs);
+    return {
+      dayTs,
+      dayLabel: getDayLabel(dayTs),
+      dateLabel: getDateLabel(dayTs),
+      entries,
+    };
+  });
+});
+
 const priorityLabel = { high: "高", medium: "中", low: "低" };
 
 function formatTime(ts) {
