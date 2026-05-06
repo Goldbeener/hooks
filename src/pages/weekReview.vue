@@ -246,18 +246,16 @@ function startHoursDrag(event, entryKey) {
 function buildDayJsonData() {
   const result = [];
   for (const group of dayGroups.value) {
-    const dayEnd = group.dayTs + MS_PER_DAY - 1; // 当天 23:59:59.999
     for (const entry of group.entries) {
       const hours = dayHours.value.get(entry.key) ?? 0;
-      const content = entry.isDone
-        ? `${entry.topicTitle} - ${entry.itemText}`
-        : `${entry.topicTitle} - ${entry.itemText}（${entry.progress}%）`;
+      if (hours === 0) continue; // 过滤掉工时为0的数据
+      const content = `${entry.topicTitle} - ${entry.itemText}`;
       result.push({
         startDate: formatDate(entry.itemId),
         lastUpdatedDate: formatDate(group.dayTs),
-        cardId: entry.topicCode,
+        cardId: +entry.topicCode,
         content,
-        duration: [group.dayTs, dayEnd],
+        duration: [group.dayTs, group.dayTs],
         plannedHours: hours,
       });
     }
@@ -365,8 +363,7 @@ async function copyToClipboard() {
               <div class="hours-bar-fill"
                 :style="{ transform: 'scaleX(' + ((dayHours.get(entry.key) ?? 0) / 12) + ')' }">
               </div>
-              <div class="hours-bar-knob"
-                :style="{ left: ((dayHours.get(entry.key) ?? 0) / 12 * 100) + '%' }">
+              <div class="hours-bar-knob" :style="{ left: ((dayHours.get(entry.key) ?? 0) / 12 * 100) + '%' }">
               </div>
             </div>
             <span class="hours-val"
