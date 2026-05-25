@@ -32,9 +32,20 @@ function navigateTo(page) {
   currentPage.value = page;
 }
 
-function navigateBack() {
+async function navigateBack() {
   slideDirection.value = "backward";
   currentPage.value = "main";
+  if (store) {
+    const saved = await store.get("topics");
+    if (saved) {
+      saved.forEach(topic =>
+        topic.items.forEach(item => {
+          if (item.progress === undefined) item.progress = item.done ? 100 : 0;
+        })
+      );
+      topics.value = saved;
+    }
+  }
 }
 
 const priorityOrder = { high: 0, medium: 1, low: 2 };
